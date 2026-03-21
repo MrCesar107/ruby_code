@@ -40,7 +40,7 @@ module RubyCode
         end
 
         def self.scopes
-          ""
+          "offline_access"
         end
 
         def self.ruby_llm_key
