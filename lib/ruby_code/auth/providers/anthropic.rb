@@ -3,6 +3,7 @@
 module RubyCode
   module Auth
     module Providers
+      # Anthropic provider's configuration
       module Anthropic
         def self.display_name
           "Anthropic"

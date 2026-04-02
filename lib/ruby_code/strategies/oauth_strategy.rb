@@ -19,27 +19,11 @@ module RubyCode
         pkce = Auth::PKCE.generate
         state = SecureRandom.hex(16)
 
-        server = Auth::OAuthCallbackServer.new
-        server.start
-
-        url = build_auth_url(pkce[:challenge], state)
-        puts "Please open the following URL in your browser to authenticate in #{@provider.display_name}..."
-        open_browser(url)
-        puts "Waiting authentication... (this may take a while)"
-
-        result = server.wait_for_callback
-
-        raise Auth::Errors::AuthError, result[:error] if result[:error]
-        raise Auth::Errors::AuthError, "State mismatch" if result[:state] != state
+        result = perform_oauth_flow(pkce[:challenge], state)
+        validate_callback!(result, state)
 
         tokens = exchange_code(result[:code], pkce[:verifier])
-
-        {
-          "auth_method" => "oauth",
-          "access_token" => tokens["access_token"],
-          "refresh_token" => tokens["refresh_token"],
-          "expires_at" => (Time.now + tokens["expires_in"].to_i).iso8601
-        }
+        build_token_response(tokens)
       end
 
       def refresh(credentials)
@@ -67,6 +51,32 @@ module RubyCode
       end
 
       private
+
+      def perform_oauth_flow(challenge, state)
+        server = Auth::OAuthCallbackServer.new
+        server.start
+
+        url = build_auth_url(challenge, state)
+        puts "Please open the following URL in your browser to authenticate in #{@provider.display_name}..."
+        open_browser(url)
+        puts "Waiting authentication... (this may take a while)"
+
+        server.wait_for_callback
+      end
+
+      def validate_callback!(result, state)
+        raise Auth::Errors::AuthError, result[:error] if result[:error]
+        raise Auth::Errors::AuthError, "State mismatch" if result[:state] != state
+      end
+
+      def build_token_response(tokens)
+        {
+          "auth_method" => "oauth",
+          "access_token" => tokens["access_token"],
+          "refresh_token" => tokens["refresh_token"],
+          "expires_at" => (Time.now + tokens["expires_in"].to_i).iso8601
+        }
+      end
 
       def build_auth_url(challenge, state)
         params = URI.encode_www_form(

@@ -2,10 +2,16 @@
 
 require "ruby_llm"
 
+require_relative "command_handler/model_commands"
+require_relative "command_handler/history_commands"
+
 module RubyCode
   module Chat
     # Handles slash commands entered in the chat input.
     class CommandHandler
+      include ModelCommands
+      include HistoryCommands
+
       COMMANDS = {
         "/help" => :cmd_help,
         "/exit" => :cmd_exit,
@@ -15,6 +21,8 @@ module RubyCode
         "/history" => :cmd_history,
         "/tokens" => :cmd_tokens
       }.freeze
+
+      HELP_TEXT = File.read(File.join(__dir__, "help.txt")).freeze
 
       def initialize(state, llm_bridge:, user_config: nil, credentials_store: nil)
         @state = state
@@ -40,18 +48,7 @@ module RubyCode
       private
 
       def cmd_help(_rest)
-        help_text = <<~HELP
-          Available commands:
-            /help              Show this help message
-            /model             Select a model from available providers
-            /model <name>      Switch directly to a named model
-            /clear             Clear the conversation history
-            /history           Show conversation summary
-            /tokens            Show token usage for this session
-            /exit, /quit       Exit the chat
-        HELP
-
-        @state.add_message(:system, help_text)
+        @state.add_message(:system, HELP_TEXT)
       end
 
       def cmd_exit(_rest)
@@ -61,97 +58,6 @@ module RubyCode
       def cmd_clear(_rest)
         @state.clear_messages!
         @state.add_message(:system, "Conversation cleared.")
-      end
-
-      def cmd_model(rest)
-        if rest.nil? || rest.strip.empty?
-          return open_model_selector
-        end
-
-        name = rest.strip
-        models = fetch_chat_models
-
-        if models.any?
-          match = models.find { |m| model_id(m) == name }
-
-          unless match
-            suggestions = models.select { |m| model_id(m).include?(name) }.map { |m| model_id(m) }.first(5)
-            msg = "Model '#{name}' not found."
-            msg += " Did you mean: #{suggestions.join(', ')}?" if suggestions.any?
-            @state.add_message(:system, msg)
-            return
-          end
-        end
-
-        @state.model = name
-        @llm_bridge.reset_chat!(name)
-        @user_config&.set_config("model", name)
-        @state.add_message(:system, "Model switched to #{name}.")
-      rescue StandardError => e
-        @state.add_message(:system, "Failed to switch model: #{e.message}")
-      end
-
-      def cmd_history(_rest)
-        snapshot = @state.messages_snapshot
-        conv = snapshot.reject { |m| m[:role] == :system }
-
-        if conv.empty?
-          @state.add_message(:system, "No conversation history yet.")
-          return
-        end
-
-        lines = conv.map.with_index(1) do |msg, i|
-          role = msg[:role].to_s.capitalize
-          preview = msg[:content].to_s.lines.first&.strip || ""
-          preview = "#{preview[0..60]}..." if preview.length > 60
-          "  #{i}. [#{role}] #{preview}"
-        end
-
-        @state.add_message(:system, "Conversation history (#{conv.size} messages):\n#{lines.join("\n")}")
-      end
-
-      def cmd_tokens(_rest)
-        ti = @state.total_input_tokens
-        to = @state.total_output_tokens
-        @state.add_message(:system, "Token usage this session: #{ti} input, #{to} output (#{ti + to} total)")
-      end
-
-      def open_model_selector
-        models = fetch_models_for_authenticated_providers
-
-        if models.empty?
-          @state.add_message(:system, "Current model: #{@state.model}. No available models found for your authenticated providers.")
-          return
-        end
-
-        @state.enter_model_select!(models)
-      end
-
-      def fetch_models_for_authenticated_providers
-        return fetch_chat_models unless @credentials_store
-
-        models = []
-        Auth::AuthManager::PROVIDERS.each do |name, _provider|
-          next unless @credentials_store.retrieve(name)
-
-          provider_models = RubyLLM.models.by_provider(name).chat_models.to_a
-          models.concat(provider_models)
-        end
-        models
-      rescue StandardError
-        fetch_chat_models
-      end
-
-      def fetch_chat_models
-        RubyLLM.models.chat_models.to_a
-      rescue StandardError
-        []
-      end
-
-      def model_id(model)
-        return model.id if model.respond_to?(:id)
-
-        model.to_s
       end
     end
   end

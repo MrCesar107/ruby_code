@@ -30,6 +30,11 @@ module RubyCode
         return :model_select_cancel if event.esc?
         return :model_selected if event.enter?
 
+        handle_model_select_input(event)
+        nil
+      end
+
+      def handle_model_select_input(event)
         if event.up?
           @state.model_select_up
         elsif event.down?
@@ -39,8 +44,6 @@ module RubyCode
         else
           append_filter_character(event)
         end
-
-        nil
       end
 
       def handle_streaming_mode(event)
@@ -55,6 +58,11 @@ module RubyCode
         return submit if event.enter?
         return backspace if event.backspace?
         return clear_input if event.esc?
+
+        scroll_or_append(event)
+      end
+
+      def scroll_or_append(event)
         return :scroll_up if event.up? || event.page_up?
         return :scroll_down if event.down? || event.page_down?
         return :scroll_top if event.home?

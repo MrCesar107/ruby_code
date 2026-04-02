@@ -5,6 +5,7 @@ require_relative "base"
 
 module RubyCode
   module Strategies
+    # This class is used to authenticate using an API key
     class APIKeyStrategy < Base
       def authenticate
         @prompt.say("Opening #{@provider.display_name} API key authentication in your browser...")

@@ -23,21 +23,10 @@ module RubyCode
       end
 
       def send_async(input)
-        @cancel_requested = false
-        @state.streaming = true
-        @state.add_message(:assistant, "")
-
-        chat = @chat_mutex.synchronize { @chat }
-
+        chat = prepare_streaming
         Thread.new do
           response = attempt_with_retries(chat, input)
-
-          if response && !@cancel_requested && response.respond_to?(:input_tokens)
-            @state.update_last_message_tokens(
-              input_tokens: response.input_tokens,
-              output_tokens: response.output_tokens
-            )
-          end
+          update_response_tokens(response)
         ensure
           @state.streaming = false
         end
@@ -49,41 +38,59 @@ module RubyCode
 
       private
 
-      def attempt_with_retries(chat, input)
-        retries = 0
+      def prepare_streaming
+        @cancel_requested = false
+        @state.streaming = true
+        @state.add_message(:assistant, "")
+        @chat_mutex.synchronize { @chat }
+      end
 
-        begin
-          if retries.zero?
-            chat.ask(input) do |chunk|
-              break if @cancel_requested
+      def update_response_tokens(response)
+        return unless response && !@cancel_requested && response.respond_to?(:input_tokens)
 
-              @state.append_to_last_message(chunk.content) if chunk.content
-            end
-          else
-            chat.complete do |chunk|
-              break if @cancel_requested
+        @state.update_last_message_tokens(
+          input_tokens: response.input_tokens,
+          output_tokens: response.output_tokens
+        )
+      end
 
-              @state.append_to_last_message(chunk.content) if chunk.content
-            end
-          end
-        rescue RubyLLM::RateLimitError => e
-          if retries < MAX_RATE_LIMIT_RETRIES && !@cancel_requested
-            retries += 1
-            delay = RATE_LIMIT_BASE_DELAY * (2**(retries - 1))
-            @state.fail_last_assistant(
-              e,
-              friendly_message: "Rate limit alcanzado. Reintentando en #{delay}s... (#{retries}/#{MAX_RATE_LIMIT_RETRIES})"
-            )
-            sleep(delay)
-            @state.reset_last_assistant_content
-            retry
-          end
-          @state.fail_last_assistant(e, friendly_message: rate_limit_user_message(e))
-          nil
-        rescue StandardError => e
-          @state.fail_last_assistant(e, friendly_message: generic_api_error_message(e))
-          nil
+      def attempt_with_retries(chat, input, retries = 0)
+        stream_response(chat, input, retries)
+      rescue RubyLLM::RateLimitError => e
+        retries = handle_rate_limit_retry(e, retries)
+        retry if retries
+        @state.fail_last_assistant(e, friendly_message: rate_limit_user_message(e))
+        nil
+      rescue StandardError => e
+        @state.fail_last_assistant(e, friendly_message: generic_api_error_message(e))
+        nil
+      end
+
+      def stream_response(chat, input, retries)
+        block = streaming_block
+        retries.zero? ? chat.ask(input, &block) : chat.complete(&block)
+      end
+
+      def streaming_block
+        proc do |chunk|
+          break if @cancel_requested
+
+          @state.append_to_last_message(chunk.content) if chunk.content
         end
+      end
+
+      def handle_rate_limit_retry(error, retries)
+        return unless retries < MAX_RATE_LIMIT_RETRIES && !@cancel_requested
+
+        retries += 1
+        delay = RATE_LIMIT_BASE_DELAY * (2**(retries - 1))
+        @state.fail_last_assistant(
+          error,
+          friendly_message: "Rate limit alcanzado. Reintentando en #{delay}s... (#{retries}/#{MAX_RATE_LIMIT_RETRIES})"
+        )
+        sleep(delay)
+        @state.reset_last_assistant_content
+        retries
       end
 
       def rate_limit_user_message(error)
