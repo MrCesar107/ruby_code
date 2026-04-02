@@ -14,8 +14,8 @@ module RubyCode
 
         def self.auth_methods
           [
-            { key: :oauth, label: "With your ChatGPT subscription (Go, Pro or Plus)" },
-            { key: :api_key, label: "With your OpenAI API key (tokens consumption will be charged to your account)" }
+            { key: :oauth, label: "With your OpenAI account (requires API credits, your ChatGPT subscription does not cover API usage)" },
+            { key: :api_key, label: "With an OpenAI API key (requires API credits at platform.openai.com)" }
           ]
         end
 

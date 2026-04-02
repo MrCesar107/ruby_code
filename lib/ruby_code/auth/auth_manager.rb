@@ -27,6 +27,7 @@ module RubyCode
         credentials = strategy.authenticate
         credential_store.store(provider_name, credentials)
         configure_ruby_llm!
+        print_api_credits_notice(provider)
         credentials
       end
 
@@ -116,6 +117,12 @@ module RubyCode
         return false unless expires_at
 
         Time.parse(expires_at) <= Time.now + 60
+      end
+
+      def print_api_credits_notice(provider)
+        console = provider.respond_to?(:console_url) ? provider.console_url : nil
+        billing_hint = console ? " Check your balance at #{console}." : ""
+        puts "\nNote: API usage consumes credits from your #{provider.display_name} account.#{billing_hint}\n\n"
       end
 
       def choose_auth_method(provider)

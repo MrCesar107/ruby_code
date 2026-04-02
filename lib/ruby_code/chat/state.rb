@@ -74,7 +74,17 @@ module RubyCode
         end
       end
 
-      # friendly_message: user-friendly message to display to the user; if nil, the error message is used
+      def reset_last_assistant_content
+        @mutex.synchronize do
+          return if @messages.empty?
+
+          last = @messages.last
+          return unless last[:role] == :assistant
+
+          last[:content] = String.new
+        end
+      end
+
       def fail_last_assistant(error, friendly_message: nil)
         @mutex.synchronize do
           return if @messages.empty?

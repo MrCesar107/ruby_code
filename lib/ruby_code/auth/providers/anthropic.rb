@@ -10,7 +10,7 @@ module RubyCode
 
         def self.auth_methods
           [
-            { key: :api_key, label: "With your Anthropic API key (tokens consumption will be charged to your account)" }
+            { key: :api_key, label: "With an Anthropic API key (requires API credits at console.anthropic.com)" }
           ]
         end
 
