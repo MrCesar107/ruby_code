@@ -14,7 +14,9 @@ module RubyCode
         return handle_paste(event) if event.is_a?(RatatuiRuby::Event::Paste)
         return nil unless event.key?
 
-        if @state.streaming?
+        if @state.model_select?
+          handle_model_select_mode(event)
+        elsif @state.streaming?
           handle_streaming_mode(event)
         else
           handle_normal_mode(event)
@@ -22,6 +24,24 @@ module RubyCode
       end
 
       private
+
+      def handle_model_select_mode(event)
+        return :quit if event.ctrl_c?
+        return :model_select_cancel if event.esc?
+        return :model_selected if event.enter?
+
+        if event.up?
+          @state.model_select_up
+        elsif event.down?
+          @state.model_select_down
+        elsif event.backspace?
+          @state.delete_last_filter_char
+        else
+          append_filter_character(event)
+        end
+
+        nil
+      end
 
       def handle_streaming_mode(event)
         return :quit if event.ctrl_c?
@@ -68,9 +88,21 @@ module RubyCode
         nil
       end
 
+      def append_filter_character(event)
+        char = event.to_s
+        return if char.empty?
+        return if event.ctrl? || event.alt?
+
+        @state.append_to_model_filter(char)
+      end
+
       def handle_paste(event)
         text = event.content.tr("\n", " ")
-        @state.append_to_input(text) unless text.empty?
+        if @state.model_select?
+          @state.append_to_model_filter(text) unless text.empty?
+        else
+          @state.append_to_input(text) unless text.empty?
+        end
         nil
       end
     end

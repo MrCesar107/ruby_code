@@ -16,10 +16,11 @@ module RubyCode
         "/tokens" => :cmd_tokens
       }.freeze
 
-      def initialize(state, llm_bridge:, user_config: nil)
+      def initialize(state, llm_bridge:, user_config: nil, credentials_store: nil)
         @state = state
         @llm_bridge = llm_bridge
         @user_config = user_config
+        @credentials_store = credentials_store
       end
 
       def handle(raw_input)
@@ -42,8 +43,8 @@ module RubyCode
         help_text = <<~HELP
           Available commands:
             /help              Show this help message
-            /model             Show the current model
-            /model <name>      Switch to a different model
+            /model             Select a model from available providers
+            /model <name>      Switch directly to a named model
             /clear             Clear the conversation history
             /history           Show conversation summary
             /tokens            Show token usage for this session
@@ -64,8 +65,7 @@ module RubyCode
 
       def cmd_model(rest)
         if rest.nil? || rest.strip.empty?
-          @state.add_message(:system, "Current model: #{@state.model}")
-          return
+          return open_model_selector
         end
 
         name = rest.strip
@@ -114,6 +114,32 @@ module RubyCode
         ti = @state.total_input_tokens
         to = @state.total_output_tokens
         @state.add_message(:system, "Token usage this session: #{ti} input, #{to} output (#{ti + to} total)")
+      end
+
+      def open_model_selector
+        models = fetch_models_for_authenticated_providers
+
+        if models.empty?
+          @state.add_message(:system, "Current model: #{@state.model}. No available models found for your authenticated providers.")
+          return
+        end
+
+        @state.enter_model_select!(models)
+      end
+
+      def fetch_models_for_authenticated_providers
+        return fetch_chat_models unless @credentials_store
+
+        models = []
+        Auth::AuthManager::PROVIDERS.each do |name, _provider|
+          next unless @credentials_store.retrieve(name)
+
+          provider_models = RubyLLM.models.by_provider(name).chat_models.to_a
+          models.concat(provider_models)
+        end
+        models
+      rescue StandardError
+        fetch_chat_models
       end
 
       def fetch_chat_models
