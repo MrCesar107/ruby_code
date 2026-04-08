@@ -22,6 +22,7 @@ module RubyCode
       end
 
       def initialize(project_root:)
+        super()
         @project_root = File.realpath(project_root)
       end
 

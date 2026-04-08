@@ -29,7 +29,8 @@ module RubyCode
           end
 
           @llm_bridge.toggle_agentic_mode!(true)
-          @state.add_message(:system, "Agent mode enabled. The model can now use tools to interact with your project files.")
+          @state.add_message(:system,
+                             "Agent mode enabled. The model can now use tools to interact with your project files.")
         end
 
         def disable_agent_mode
