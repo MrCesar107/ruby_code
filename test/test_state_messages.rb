@@ -32,6 +32,7 @@ class TestStateMessages < Minitest::Test
   def test_add_message_scrolls_to_bottom
     @state.add_message(:user, "one")
     @state.add_message(:user, "two")
+    @state.update_scroll_metrics(total_lines: 20, visible_height: 10)
     @state.scroll_up
     refute_equal 0, @state.scroll_offset
 
@@ -146,6 +147,7 @@ class TestStateMessages < Minitest::Test
   def test_clear_messages_resets_scroll
     @state.add_message(:user, "a")
     @state.add_message(:user, "b")
+    @state.update_scroll_metrics(total_lines: 20, visible_height: 10)
     @state.scroll_up
     @state.clear_messages!
 
@@ -191,5 +193,47 @@ class TestStateMessages < Minitest::Test
     assert_equal 2, snapshot.size
     assert_equal :user, snapshot[0][:role]
     assert_equal :assistant, snapshot[1][:role]
+  end
+
+  # --- ensure_last_is_assistant! ---
+
+  def test_ensure_last_is_assistant_creates_message_when_empty
+    @state.ensure_last_is_assistant!
+
+    assert_equal 1, @state.messages.size
+    assert_equal :assistant, @state.messages.last[:role]
+    assert_equal "", @state.messages.last[:content]
+  end
+
+  def test_ensure_last_is_assistant_noop_when_last_is_assistant
+    @state.add_message(:assistant, "existing")
+    @state.ensure_last_is_assistant!
+
+    assert_equal 1, @state.messages.size
+    assert_equal "existing", @state.messages.last[:content]
+  end
+
+  def test_ensure_last_is_assistant_adds_after_tool_result
+    @state.add_message(:assistant, "initial")
+    @state.add_message(:tool_call, "[read_file] path: app.rb")
+    @state.add_message(:tool_result, "class App; end")
+    @state.ensure_last_is_assistant!
+
+    assert_equal 4, @state.messages.size
+    assert_equal :assistant, @state.messages.last[:role]
+    assert_equal "", @state.messages.last[:content]
+  end
+
+  def test_streaming_after_tool_result_lands_in_new_assistant
+    @state.add_message(:assistant, "Let me check")
+    @state.add_message(:tool_call, "[read_file] path: app.rb")
+    @state.add_message(:tool_result, "file contents")
+
+    @state.ensure_last_is_assistant!
+    @state.append_to_last_message("Here is the result.")
+
+    assert_equal :assistant, @state.messages.last[:role]
+    assert_equal "Here is the result.", @state.messages.last[:content]
+    assert_equal "file contents", @state.messages[2][:content]
   end
 end

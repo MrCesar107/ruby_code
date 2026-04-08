@@ -27,6 +27,22 @@ module RubyCode
           end
         end
 
+        # Ensures the last message is :assistant so streaming chunks
+        # land in the right place after tool call/result messages.
+        def ensure_last_is_assistant!
+          @mutex.synchronize do
+            return if !@messages.empty? && @messages.last[:role] == :assistant
+
+            @messages << {
+              role: :assistant,
+              content: String.new,
+              timestamp: Time.now,
+              input_tokens: 0,
+              output_tokens: 0
+            }
+          end
+        end
+
         def last_assistant_empty?
           @mutex.synchronize do
             return true if @messages.empty?

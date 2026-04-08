@@ -11,6 +11,7 @@ module RubyCode
           "/clear" => "Clear conversation history",
           "/history" => "Show conversation summary",
           "/tokens" => "Show token usage",
+          "/agent" => "Toggle agent mode (on/off)",
           "/exit" => "Exit the chat",
           "/quit" => "Exit the chat"
         }.freeze

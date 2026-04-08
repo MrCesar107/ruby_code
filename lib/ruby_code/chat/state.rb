@@ -3,6 +3,7 @@
 require_relative "state/model_selection"
 require_relative "state/messages"
 require_relative "state/scrollable"
+require_relative "state/tool_confirmation"
 
 module RubyCode
   module Chat
@@ -11,6 +12,7 @@ module RubyCode
       include ModelSelection
       include Messages
       include Scrollable
+      include ToolConfirmation
 
       attr_reader :input_buffer, :messages, :scroll_offset,
                   :mode, :model_list, :model_select_index, :model_select_filter
@@ -32,6 +34,7 @@ module RubyCode
         @model_select_index = 0
         @model_select_filter = String.new
         @model_select_show_all = false
+        init_tool_confirmation
         init_plugin_state
       end
 

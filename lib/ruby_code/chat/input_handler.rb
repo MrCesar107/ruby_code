@@ -12,9 +12,12 @@ module RubyCode
 
       def process(event)
         return handle_paste(event) if event.is_a?(RatatuiRuby::Event::Paste)
+        return handle_mouse(event) if event.is_a?(RatatuiRuby::Event::Mouse)
         return nil unless event.key?
 
-        if @state.model_select?
+        if @state.awaiting_tool_confirmation?
+          handle_tool_confirmation_mode(event)
+        elsif @state.model_select?
           handle_model_select_mode(event)
         elsif @state.streaming?
           handle_streaming_mode(event)
@@ -24,6 +27,18 @@ module RubyCode
       end
 
       private
+
+      def handle_tool_confirmation_mode(event)
+        return :quit if event.ctrl_c?
+        return :tool_rejected if event.esc?
+
+        char = event.to_s.downcase
+        return :tool_approved if event.enter? || char == "y"
+        return :tool_rejected if char == "n"
+        return :tool_approved_all if char == "a"
+
+        nil
+      end
 
       def handle_model_select_mode(event)
         return :quit if event.ctrl_c?
@@ -49,6 +64,15 @@ module RubyCode
       def handle_streaming_mode(event)
         return :quit if event.ctrl_c?
         return :cancel_streaming if event.esc?
+        return :scroll_up if event.up? || event.page_up?
+        return :scroll_down if event.down? || event.page_down?
+
+        nil
+      end
+
+      def handle_mouse(event)
+        return :scroll_up if event.scroll_up?
+        return :scroll_down if event.scroll_down?
 
         nil
       end

@@ -6,4 +6,12 @@ Available commands:
   /clear             Clear the conversation history
   /history           Show conversation summary
   /tokens            Show token usage for this session
+  /agent             Show agent mode status
+  /agent on          Enable agent mode (tools for file operations)
+  /agent off         Disable agent mode (chat only)
   /exit, /quit       Exit the chat
+
+Tool confirmations (agent mode):
+  [y] / Enter        Approve the current tool call
+  [n] / Esc          Reject the current tool call
+  [a]                Approve current and all future tool calls (yes to all)

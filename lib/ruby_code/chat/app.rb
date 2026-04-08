@@ -81,6 +81,9 @@ module RubyCode
         when :model_selected then apply_selected_model
         when :model_select_cancel then @state.exit_model_select!
         when :cancel_streaming then @llm_bridge.cancel!
+        when :tool_approved then @llm_bridge.approve_tool!
+        when :tool_approved_all then @llm_bridge.approve_all_tools!
+        when :tool_rejected then @llm_bridge.reject_tool!
         when :scroll_up, :scroll_down, :scroll_top, :scroll_bottom then handle_scroll(action)
         end
       end

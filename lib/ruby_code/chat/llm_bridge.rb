@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "ruby_llm"
+require_relative "../tools/registry"
+require_relative "../tools/system_prompt"
 
 module RubyCode
   module Chat
@@ -9,17 +11,29 @@ module RubyCode
       MAX_RATE_LIMIT_RETRIES = 2
       RATE_LIMIT_BASE_DELAY = 2
 
-      def initialize(state)
+      attr_reader :agentic_mode
+
+      def initialize(state, project_root: Dir.pwd)
         @state = state
         @chat_mutex = Mutex.new
         @cancel_requested = false
+        @project_root = project_root
+        @agentic_mode = false
+        @tool_registry = Tools::Registry.new(project_root: @project_root)
         reset_chat!(@state.model)
       end
 
       def reset_chat!(model_name)
         @chat_mutex.synchronize do
           @chat = RubyLLM.chat(model: model_name)
+          configure_agentic!(@chat) if @agentic_mode
         end
+      end
+
+      def toggle_agentic_mode!(enabled)
+        @agentic_mode = enabled
+        @state.disable_auto_approve! unless enabled
+        reset_chat!(@state.model)
       end
 
       def send_async(input)
@@ -36,7 +50,75 @@ module RubyCode
         @cancel_requested = true
       end
 
+      def approve_tool!
+        @state.tool_confirmation_response = :approved
+      end
+
+      def approve_all_tools!
+        @state.enable_auto_approve!
+        @state.tool_confirmation_response = :approved
+      end
+
+      def reject_tool!
+        @state.tool_confirmation_response = :rejected
+      end
+
       private
+
+      def configure_agentic!(chat)
+        tools = @tool_registry.build_tools
+        chat.with_tools(*tools)
+        chat.with_instructions(Tools::SystemPrompt.build(project_root: @project_root))
+
+        chat.on_tool_call do |tool_call|
+          handle_tool_call(tool_call)
+        end
+
+        chat.on_tool_result do |result|
+          handle_tool_result(result)
+        end
+      end
+
+      def handle_tool_call(tool_call)
+        display_name = short_tool_name(tool_call.name)
+        risk = @tool_registry.risk_level_for(tool_call.name)
+        args_summary = tool_call.arguments.map { |k, v| "#{k}: #{v}" }.join(", ")
+
+        if risk == Tools::BaseTool::SAFE_RISK || @state.auto_approve_tools?
+          @state.add_message(:tool_call, "[#{display_name}] #{args_summary}")
+        else
+          risk_label = risk == Tools::BaseTool::DANGEROUS_RISK ? "DANGEROUS" : "WRITE"
+          @state.request_tool_confirmation!(display_name, tool_call.arguments, risk_label: risk_label)
+          wait_for_confirmation(tool_call)
+        end
+      end
+
+      def wait_for_confirmation(tool_call)
+        display_name = short_tool_name(tool_call.name)
+        loop do
+          response = @state.tool_confirmation_response
+          case response
+          when :approved
+            @state.resolve_tool_confirmation!(:approved)
+            break
+          when :rejected
+            @state.resolve_tool_confirmation!(:rejected)
+            raise RubyCode::Tools::ToolRejectedError, "User rejected #{display_name}"
+          else
+            sleep(0.1)
+          end
+          break if @cancel_requested
+        end
+      end
+
+      def handle_tool_result(result)
+        @state.add_message(:tool_result, result.to_s)
+      end
+
+      # "ruby_code--tools--read_file_tool" → "read_file_tool"
+      def short_tool_name(name)
+        name.split("--").last
+      end
 
       def prepare_streaming
         @cancel_requested = false
@@ -56,6 +138,9 @@ module RubyCode
 
       def attempt_with_retries(chat, input, retries = 0)
         stream_response(chat, input, retries)
+      rescue RubyCode::Tools::ToolRejectedError => e
+        @state.add_message(:system, e.message)
+        nil
       rescue RubyLLM::RateLimitError => e
         retries = handle_rate_limit_retry(e, retries)
         retry if retries
@@ -75,7 +160,10 @@ module RubyCode
         proc do |chunk|
           break if @cancel_requested
 
-          @state.append_to_last_message(chunk.content) if chunk.content
+          if chunk.content
+            @state.ensure_last_is_assistant!
+            @state.append_to_last_message(chunk.content)
+          end
         end
       end
 
