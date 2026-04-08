@@ -3,7 +3,8 @@
 module RubyCode
   module Chat
     class State
-      # This module contains the logic for the scrollable management
+      # This module contains the logic for the scrollable management.
+      # scroll_offset represents "lines from the bottom": 0 = latest content visible.
       module Scrollable
         def scroll_up(amount = 1)
           @scroll_offset = [@scroll_offset + amount, max_scroll].min
@@ -21,10 +22,15 @@ module RubyCode
           @scroll_offset = 0
         end
 
+        def update_scroll_metrics(total_lines:, visible_height:)
+          @total_lines = total_lines
+          @visible_height = visible_height
+        end
+
         private
 
         def max_scroll
-          [@messages.length - 1, 0].max
+          [@total_lines - @visible_height, 0].max
         end
       end
     end

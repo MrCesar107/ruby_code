@@ -25,6 +25,8 @@ module RubyCode
         @should_quit = false
         @mutex = Mutex.new
         @scroll_offset = 0
+        @total_lines = 0
+        @visible_height = 0
         @mode = :chat
         @model_list = []
         @model_select_index = 0
