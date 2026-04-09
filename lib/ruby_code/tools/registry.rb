@@ -12,9 +12,13 @@ module RubyCode
   module Tools
     # Builds and manages the set of tools available to the LLM in agentic mode.
     class Registry
-      TOOL_CLASSES = [
+      READONLY_TOOL_CLASSES = [
         ReadFileTool,
-        ListDirectoryTool,
+        ListDirectoryTool
+      ].freeze
+
+      TOOL_CLASSES = [
+        *READONLY_TOOL_CLASSES,
         WriteFileTool,
         EditFileTool,
         CreateDirectoryTool,
@@ -28,6 +32,10 @@ module RubyCode
 
       def build_tools
         TOOL_CLASSES.map { |klass| klass.new(project_root: @project_root) }
+      end
+
+      def build_readonly_tools
+        READONLY_TOOL_CLASSES.map { |klass| klass.new(project_root: @project_root) }
       end
 
       def safe_tool?(tool_call_name)

@@ -21,6 +21,8 @@ module RubyCode
                   :streaming
       attr_accessor :model, :should_quit
 
+      MIN_RENDER_INTERVAL = 0.05
+
       def initialize(model:)
         @model = model
         # String.new: literals like "" are frozen under frozen_string_literal
@@ -30,6 +32,7 @@ module RubyCode
         @should_quit = false
         @mutex = Mutex.new
         @dirty = true
+        @last_render_at = 0.0
         @scroll_offset = 0
         @total_lines = 0
         @visible_height = 0
@@ -57,11 +60,20 @@ module RubyCode
       end
 
       def dirty?
-        @mutex.synchronize { @dirty }
+        @mutex.synchronize do
+          return false unless @dirty
+          return true unless @streaming
+
+          now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          (now - @last_render_at) >= MIN_RENDER_INTERVAL
+        end
       end
 
       def mark_clean!
-        @mutex.synchronize { @dirty = false }
+        @mutex.synchronize do
+          @dirty = false
+          @last_render_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        end
       end
 
       def mark_dirty!

@@ -10,6 +10,7 @@ module RubyCode
         THINK_OPEN = "<think>"
         THINK_CLOSE = "</think>"
         TOOL_ROLES = %i[tool_call tool_pending tool_result].freeze
+        MAX_THINKING_MESSAGES = 20
 
         private
 
@@ -49,8 +50,9 @@ module RubyCode
         # Splits the chat area: prior messages on top, current agent
         # cycle (thinking + tool activity) in a bottom panel.
         def render_chat_with_thinking(frame, area, messages)
-          cycle = current_cycle_messages(messages)
-          prior = messages[0...(messages.length - cycle.length)]
+          full_cycle = current_cycle_messages(messages)
+          cycle = tail_of_cycle(full_cycle)
+          prior = messages[0...(messages.length - full_cycle.length)]
 
           chat_area, thinking_area = @tui.layout_split(
             area,
@@ -123,6 +125,18 @@ module RubyCode
           return messages unless last_user_idx
 
           messages[(last_user_idx + 1)..]
+        end
+
+        # Keep only the tail of the cycle for display, avoiding a
+        # panel that grows unbounded with completed operations.
+        def tail_of_cycle(cycle)
+          return cycle if cycle.length <= MAX_THINKING_MESSAGES
+
+          truncated = cycle.last(MAX_THINKING_MESSAGES)
+          omitted = cycle.length - MAX_THINKING_MESSAGES
+          header = { role: :system, content: "... #{omitted} earlier messages omitted ...", timestamp: Time.now,
+                     input_tokens: 0, output_tokens: 0 }
+          [header] + truncated
         end
 
         def open_think_block?(content)

@@ -117,7 +117,11 @@ module RubyCode
         end
 
         def messages_snapshot
-          @mutex.synchronize { @messages.map(&:dup) }
+          @mutex.synchronize do
+            @messages.map do |msg|
+              msg.dup.tap { |m| m[:content] = m[:content].dup }
+            end
+          end
         end
       end
     end

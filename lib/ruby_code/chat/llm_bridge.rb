@@ -14,7 +14,8 @@ module RubyCode
     class LLMBridge
       MAX_RATE_LIMIT_RETRIES = 2
       RATE_LIMIT_BASE_DELAY = 2
-      MAX_TOOL_ROUNDS = 50
+      MAX_WRITE_TOOL_ROUNDS = 50
+      MAX_TOTAL_TOOL_ROUNDS = 200
       TOOL_ROUNDS_WARNING_THRESHOLD = 0.8
       MAX_TOOL_RESULT_CHARS = 10_000
 
@@ -60,6 +61,7 @@ module RubyCode
 
       def send_async(input)
         @tool_call_count = 0
+        @write_tool_call_count = 0
         chat = prepare_streaming
         Thread.new do
           response = attempt_with_retries(chat, input)
@@ -92,7 +94,11 @@ module RubyCode
       def configure_agentic!(chat)
         tools = @tool_registry.build_tools
         chat.with_tools(*tools)
-        chat.with_instructions(Tools::SystemPrompt.build(project_root: @project_root, max_tool_rounds: MAX_TOOL_ROUNDS))
+        chat.with_instructions(Tools::SystemPrompt.build(
+                                 project_root: @project_root,
+                                 max_write_rounds: MAX_WRITE_TOOL_ROUNDS,
+                                 max_total_rounds: MAX_TOTAL_TOOL_ROUNDS
+                               ))
 
         chat.on_tool_call do |tool_call|
           handle_tool_call(tool_call)
@@ -106,15 +112,14 @@ module RubyCode
       def handle_tool_call(tool_call)
         raise Tools::AgentCancelledError, "Operation cancelled by user" if @cancel_requested
 
-        @tool_call_count += 1
-        if @tool_call_count > MAX_TOOL_ROUNDS
-          raise Tools::AgentIterationLimitError,
-                "Reached maximum of #{MAX_TOOL_ROUNDS} tool calls. Use /agent on to start a new session."
-        end
-        warn_approaching_limit
-
         display_name = short_tool_name(tool_call.name)
         risk = @tool_registry.risk_level_for(tool_call.name)
+
+        @tool_call_count += 1
+        @write_tool_call_count += 1 unless risk == Tools::BaseTool::SAFE_RISK
+        check_tool_limits!
+        warn_approaching_limit
+
         args_summary = tool_call.arguments.map { |k, v| "#{k}: #{v}" }.join(", ")
 
         if risk == Tools::BaseTool::SAFE_RISK || @state.auto_approve_tools?
@@ -156,13 +161,32 @@ module RubyCode
         @state.add_message(:tool_result, text)
       end
 
-      def warn_approaching_limit
-        warning_at = (MAX_TOOL_ROUNDS * TOOL_ROUNDS_WARNING_THRESHOLD).to_i
-        return unless @tool_call_count == warning_at
+      def check_tool_limits!
+        if @write_tool_call_count > MAX_WRITE_TOOL_ROUNDS
+          raise Tools::AgentIterationLimitError,
+                "Reached maximum of #{MAX_WRITE_TOOL_ROUNDS} write tool calls. " \
+                "Use /agent on to start a new session."
+        end
 
-        remaining = MAX_TOOL_ROUNDS - @tool_call_count
+        return unless @tool_call_count > MAX_TOTAL_TOOL_ROUNDS
+
+        raise Tools::AgentIterationLimitError,
+              "Reached maximum of #{MAX_TOTAL_TOOL_ROUNDS} total tool calls. " \
+              "Use /agent on to start a new session."
+      end
+
+      def warn_approaching_limit
+        warn_limit(@write_tool_call_count, MAX_WRITE_TOOL_ROUNDS, "write")
+        warn_limit(@tool_call_count, MAX_TOTAL_TOOL_ROUNDS, "total")
+      end
+
+      def warn_limit(count, max, label)
+        warning_at = (max * TOOL_ROUNDS_WARNING_THRESHOLD).to_i
+        return unless count == warning_at
+
+        remaining = max - count
         @state.add_message(:system,
-                           "Approaching tool call limit: #{remaining} calls remaining. " \
+                           "Approaching #{label} tool call limit: #{remaining} calls remaining. " \
                            "Prioritize completing the most important work.")
       end
 
@@ -250,7 +274,17 @@ module RubyCode
       end
 
       def configure_plan!(chat)
+        readonly_tools = @tool_registry.build_readonly_tools
+        chat.with_tools(*readonly_tools)
         chat.with_instructions(Tools::PlanSystemPrompt.build(project_root: @project_root))
+
+        chat.on_tool_call do |tool_call|
+          handle_tool_call(tool_call)
+        end
+
+        chat.on_tool_result do |result|
+          handle_tool_result(result)
+        end
       end
 
       def post_process_plan_response
