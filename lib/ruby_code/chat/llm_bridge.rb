@@ -4,6 +4,8 @@ require "ruby_llm"
 require_relative "../tools/registry"
 require_relative "../tools/system_prompt"
 require_relative "../tools/plan_system_prompt"
+require_relative "../tools/agent_cancelled_error"
+require_relative "../tools/agent_iteration_limit_error"
 require_relative "plan_clarification_parser"
 
 module RubyCode
@@ -12,6 +14,8 @@ module RubyCode
     class LLMBridge
       MAX_RATE_LIMIT_RETRIES = 2
       RATE_LIMIT_BASE_DELAY = 2
+      MAX_TOOL_ROUNDS = 25
+      MAX_TOOL_RESULT_CHARS = 10_000
 
       attr_reader :agentic_mode, :plan_mode, :project_root
 
@@ -54,6 +58,7 @@ module RubyCode
       end
 
       def send_async(input)
+        @tool_call_count = 0
         chat = prepare_streaming
         Thread.new do
           response = attempt_with_retries(chat, input)
@@ -98,6 +103,14 @@ module RubyCode
       end
 
       def handle_tool_call(tool_call)
+        raise Tools::AgentCancelledError, "Operation cancelled by user" if @cancel_requested
+
+        @tool_call_count += 1
+        if @tool_call_count > MAX_TOOL_ROUNDS
+          raise Tools::AgentIterationLimitError,
+                "Reached maximum of #{MAX_TOOL_ROUNDS} tool calls. Use /agent on to start a new session."
+        end
+
         display_name = short_tool_name(tool_call.name)
         risk = @tool_registry.risk_level_for(tool_call.name)
         args_summary = tool_call.arguments.map { |k, v| "#{k}: #{v}" }.join(", ")
@@ -114,6 +127,11 @@ module RubyCode
       def wait_for_confirmation(tool_call)
         display_name = short_tool_name(tool_call.name)
         loop do
+          if @cancel_requested
+            @state.clear_tool_confirmation!
+            raise Tools::AgentCancelledError, "Operation cancelled by user"
+          end
+
           response = @state.tool_confirmation_response
           case response
           when :approved
@@ -125,12 +143,15 @@ module RubyCode
           else
             sleep(0.1)
           end
-          break if @cancel_requested
         end
       end
 
       def handle_tool_result(result)
-        @state.add_message(:tool_result, result.to_s)
+        text = result.to_s
+        if text.length > MAX_TOOL_RESULT_CHARS
+          text = "#{text[0, MAX_TOOL_RESULT_CHARS]}\n... (truncated, #{text.length} total characters)"
+        end
+        @state.add_message(:tool_result, text)
       end
 
       # "ruby_code--tools--read_file_tool" → "read_file_tool"
@@ -156,6 +177,12 @@ module RubyCode
 
       def attempt_with_retries(chat, input, retries = 0)
         stream_response(chat, input, retries)
+      rescue Tools::AgentCancelledError => e
+        @state.add_message(:system, e.message)
+        nil
+      rescue Tools::AgentIterationLimitError => e
+        @state.add_message(:system, e.message)
+        nil
       rescue RubyCode::Tools::ToolRejectedError => e
         @state.add_message(:system, e.message)
         nil

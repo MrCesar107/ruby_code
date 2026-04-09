@@ -17,8 +17,9 @@ module RubyCode
       include PlanTracking
 
       attr_reader :input_buffer, :messages, :scroll_offset,
-                  :mode, :model_list, :model_select_index, :model_select_filter
-      attr_accessor :model, :streaming, :should_quit
+                  :mode, :model_list, :model_select_index, :model_select_filter,
+                  :streaming
+      attr_accessor :model, :should_quit
 
       def initialize(model:)
         @model = model
@@ -28,6 +29,7 @@ module RubyCode
         @streaming = false
         @should_quit = false
         @mutex = Mutex.new
+        @dirty = true
         @scroll_offset = 0
         @total_lines = 0
         @visible_height = 0
@@ -41,6 +43,11 @@ module RubyCode
         init_plugin_state
       end
 
+      def streaming=(value)
+        @streaming = value
+        mark_dirty!
+      end
+
       def streaming?
         @streaming
       end
@@ -49,18 +56,33 @@ module RubyCode
         @should_quit
       end
 
+      def dirty?
+        @mutex.synchronize { @dirty }
+      end
+
+      def mark_clean!
+        @mutex.synchronize { @dirty = false }
+      end
+
+      def mark_dirty!
+        @dirty = true
+      end
+
       def append_to_input(text)
         @input_buffer << text
+        mark_dirty!
         reset_command_completion_index if respond_to?(:reset_command_completion_index, true)
       end
 
       def delete_last_char
         @input_buffer.chop!
+        mark_dirty!
         reset_command_completion_index if respond_to?(:reset_command_completion_index, true)
       end
 
       def clear_input!
         @input_buffer.clear
+        mark_dirty!
       end
 
       def consume_input!

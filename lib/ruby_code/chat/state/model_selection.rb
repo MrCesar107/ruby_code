@@ -19,6 +19,7 @@ module RubyCode
           @model_select_filter = String.new
           @model_select_show_all = show_all
           @mode = :model_select
+          mark_dirty!
         end
 
         def exit_model_select!
@@ -27,6 +28,7 @@ module RubyCode
           @model_select_index = 0
           @model_select_filter = String.new
           @model_select_show_all = false
+          mark_dirty!
         end
 
         def model_select_up
@@ -34,6 +36,7 @@ module RubyCode
           return if filtered.empty?
 
           @model_select_index = (@model_select_index - 1) % filtered.size
+          mark_dirty!
         end
 
         def model_select_down
@@ -41,6 +44,7 @@ module RubyCode
           return if filtered.empty?
 
           @model_select_index = (@model_select_index + 1) % filtered.size
+          mark_dirty!
         end
 
         def selected_model
@@ -61,11 +65,13 @@ module RubyCode
         def append_to_model_filter(text)
           @model_select_filter << text
           @model_select_index = 0
+          mark_dirty!
         end
 
         def delete_last_filter_char
           @model_select_filter.chop!
           @model_select_index = 0
+          mark_dirty!
         end
       end
     end

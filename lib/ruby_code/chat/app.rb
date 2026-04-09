@@ -30,7 +30,10 @@ module RubyCode
           @renderer = Renderer.new(tui, @state)
 
           loop do
-            @renderer.draw
+            if @state.dirty?
+              @renderer.draw
+              @state.mark_clean!
+            end
             break if handle_event == :quit
           end
         end

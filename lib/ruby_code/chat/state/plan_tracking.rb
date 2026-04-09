@@ -80,6 +80,7 @@ module RubyCode
             @clarification_custom_input = String.new
             @clarification_input_mode = :options
             @mode = :plan_clarification
+            @dirty = true
           end
         end
 
@@ -87,6 +88,7 @@ module RubyCode
           @mutex.synchronize do
             @mode = :chat
             reset_clarification_state
+            @dirty = true
           end
         end
 
@@ -94,12 +96,14 @@ module RubyCode
           return if @clarification_options.empty?
 
           @clarification_index = (@clarification_index - 1) % @clarification_options.size
+          mark_dirty!
         end
 
         def clarification_down
           return if @clarification_options.empty?
 
           @clarification_index = (@clarification_index + 1) % @clarification_options.size
+          mark_dirty!
         end
 
         def selected_clarification_option
@@ -108,14 +112,17 @@ module RubyCode
 
         def toggle_clarification_input_mode!
           @clarification_input_mode = @clarification_input_mode == :options ? :custom : :options
+          mark_dirty!
         end
 
         def append_to_clarification_input(text)
           @clarification_custom_input << text
+          mark_dirty!
         end
 
         def delete_last_clarification_char
           @clarification_custom_input.chop!
+          mark_dirty!
         end
 
         private

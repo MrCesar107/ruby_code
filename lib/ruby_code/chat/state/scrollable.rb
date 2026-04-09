@@ -8,18 +8,22 @@ module RubyCode
       module Scrollable
         def scroll_up(amount = 1)
           @scroll_offset = [@scroll_offset + amount, max_scroll].min
+          mark_dirty!
         end
 
         def scroll_down(amount = 1)
           @scroll_offset = [@scroll_offset - amount, 0].max
+          mark_dirty!
         end
 
         def scroll_to_top
           @scroll_offset = max_scroll
+          mark_dirty!
         end
 
         def scroll_to_bottom
           @scroll_offset = 0
+          mark_dirty!
         end
 
         def update_scroll_metrics(total_lines:, visible_height:)

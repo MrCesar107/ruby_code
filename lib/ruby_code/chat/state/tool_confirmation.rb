@@ -66,6 +66,7 @@ module RubyCode
               input_tokens: 0,
               output_tokens: 0
             }
+            @dirty = true
           end
 
           scroll_to_bottom
@@ -84,6 +85,7 @@ module RubyCode
             @pending_tool_args = nil
             @tool_confirmation_response = nil
             @mode = :chat
+            @dirty = true
           end
         end
 
@@ -93,6 +95,7 @@ module RubyCode
             @pending_tool_args = nil
             @tool_confirmation_response = nil
             @mode = :chat
+            @dirty = true
           end
         end
       end

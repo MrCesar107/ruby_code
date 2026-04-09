@@ -14,6 +14,7 @@ module RubyCode
               input_tokens: 0,
               output_tokens: 0
             }
+            @dirty = true
           end
 
           scroll_to_bottom
@@ -24,6 +25,7 @@ module RubyCode
             return if @messages.empty?
 
             @messages.last[:content] << text.to_s
+            @dirty = true
           end
         end
 
@@ -40,6 +42,7 @@ module RubyCode
               input_tokens: 0,
               output_tokens: 0
             }
+            @dirty = true
           end
         end
 
@@ -60,6 +63,7 @@ module RubyCode
             return unless last[:role] == :assistant
 
             last[:content] = String.new
+            @dirty = true
           end
         end
 
@@ -71,6 +75,7 @@ module RubyCode
             return unless last[:role] == :assistant
 
             apply_error_to_message(last, friendly_message || "[Error] #{error.class}: #{error.message}")
+            @dirty = true
           end
         end
 
@@ -92,7 +97,10 @@ module RubyCode
         end
 
         def clear_messages!
-          @mutex.synchronize { @messages.clear }
+          @mutex.synchronize do
+            @messages.clear
+            @dirty = true
+          end
           @scroll_offset = 0
         end
 
