@@ -43,7 +43,7 @@ class TestAgentCommands < Minitest::Test
     @llm_bridge.toggle_agentic_mode!(true)
     @handler.handle("/agent on")
     last_msg = @state.messages_snapshot.last
-    assert_includes last_msg[:content], "already enabled"
+    assert_includes last_msg[:content], "Agent session reset"
   end
 
   def test_agent_off_when_already_disabled
@@ -86,6 +86,8 @@ class TestAgentCommands < Minitest::Test
     def toggle_agentic_mode!(enabled)
       @agentic_mode = enabled
     end
+
+    def reset_agent_session!; end
 
     def reset_chat!(_model); end
   end
