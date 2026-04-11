@@ -177,6 +177,69 @@ class TestStateMessages < Minitest::Test
     assert_equal 0, @state.total_output_tokens
   end
 
+  # --- update_last_message_tokens with model: parameter ---
+
+  def test_update_last_message_tokens_tracks_by_default_model
+    @state.add_message(:assistant, "Hello")
+    @state.update_last_message_tokens(input_tokens: 100, output_tokens: 50)
+
+    usage = @state.token_usage_by_model
+    assert_equal({ input_tokens: 100, output_tokens: 50 }, usage["gpt-4o"])
+  end
+
+  def test_update_last_message_tokens_tracks_by_explicit_model
+    @state.add_message(:assistant, "Hello")
+    @state.update_last_message_tokens(input_tokens: 100, output_tokens: 50, model: "claude-sonnet")
+
+    usage = @state.token_usage_by_model
+    assert_equal({ input_tokens: 100, output_tokens: 50 }, usage["claude-sonnet"])
+    assert_nil usage["gpt-4o"]
+  end
+
+  def test_update_last_message_tokens_accumulates_per_model
+    @state.add_message(:assistant, "A")
+    @state.update_last_message_tokens(input_tokens: 100, output_tokens: 50)
+    @state.add_message(:assistant, "B")
+    @state.update_last_message_tokens(input_tokens: 200, output_tokens: 75)
+
+    usage = @state.token_usage_by_model
+    assert_equal({ input_tokens: 300, output_tokens: 125 }, usage["gpt-4o"])
+  end
+
+  def test_update_last_message_tokens_tracks_multiple_models
+    @state.add_message(:assistant, "A")
+    @state.update_last_message_tokens(input_tokens: 100, output_tokens: 50, model: "model-a")
+    @state.add_message(:assistant, "B")
+    @state.update_last_message_tokens(input_tokens: 200, output_tokens: 75, model: "model-b")
+
+    usage = @state.token_usage_by_model
+    assert_equal({ input_tokens: 100, output_tokens: 50 }, usage["model-a"])
+    assert_equal({ input_tokens: 200, output_tokens: 75 }, usage["model-b"])
+  end
+
+  # --- clear_messages! resets token usage ---
+
+  def test_clear_messages_resets_token_usage_by_model
+    @state.add_message(:assistant, "A")
+    @state.update_last_message_tokens(input_tokens: 100, output_tokens: 50)
+    refute_empty @state.token_usage_by_model
+
+    @state.clear_messages!
+    assert_empty @state.token_usage_by_model
+  end
+
+  # --- token_usage_by_model returns independent copy ---
+
+  def test_token_usage_by_model_returns_independent_copy
+    @state.add_message(:assistant, "A")
+    @state.update_last_message_tokens(input_tokens: 100, output_tokens: 50)
+
+    usage = @state.token_usage_by_model
+    usage["gpt-4o"][:input_tokens] = 999
+
+    assert_equal 100, @state.token_usage_by_model["gpt-4o"][:input_tokens]
+  end
+
   def test_messages_snapshot_returns_independent_hashes
     @state.add_message(:user, "Hello")
     snapshot = @state.messages_snapshot

@@ -3,6 +3,7 @@
 require_relative "renderer/chat_panel"
 require_relative "renderer/model_selector"
 require_relative "renderer/plan_clarifier"
+require_relative "renderer/status_bar"
 
 module RubyCode
   module Chat
@@ -11,6 +12,7 @@ module RubyCode
       include ChatPanel
       include ModelSelector
       include PlanClarifier
+      include StatusBar
 
       def initialize(tui, state)
         @tui = tui
@@ -21,8 +23,9 @@ module RubyCode
         @tui.clear
 
         @tui.draw do |frame|
-          chat_area, input_area = main_layout(frame)
+          chat_area, status_area, input_area = main_layout(frame)
           render_chat_panel(frame, chat_area)
+          render_status_bar(frame, status_area)
           render_input_panel(frame, input_area)
           render_model_selector(frame, chat_area) if @state.model_select?
           render_plan_clarifier(frame, chat_area) if @state.plan_clarification?
@@ -45,6 +48,7 @@ module RubyCode
           direction: :vertical,
           constraints: [
             @tui.constraint_fill(1),
+            @tui.constraint_length(1),
             @tui.constraint_length(3)
           ]
         )

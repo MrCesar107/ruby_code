@@ -10,7 +10,7 @@ module RubyCode
           "/model" => "Select or switch model",
           "/clear" => "Clear conversation history",
           "/history" => "Show conversation summary",
-          "/tokens" => "Show token usage",
+          "/tokens" => "Show detailed token usage and cost",
           "/agent" => "Toggle agent mode (on/off)",
           "/plan" => "Toggle plan mode (on/off/save)",
           "/exit" => "Exit the chat",

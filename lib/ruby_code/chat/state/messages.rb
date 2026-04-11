@@ -11,6 +11,7 @@ module RubyCode
           @message_generation = 0
           @snapshot_cache = nil
           @snapshot_cache_gen = -1
+          @token_usage_by_model = Hash.new { |h, k| h[k] = { input_tokens: 0, output_tokens: 0 } }
         end
 
         def add_message(role, content)
@@ -118,18 +119,23 @@ module RubyCode
           end
         end
 
-        def update_last_message_tokens(input_tokens:, output_tokens:)
+        def update_last_message_tokens(input_tokens:, output_tokens:, model: nil)
           @mutex.synchronize do
             return if @messages.empty?
 
             @messages.last[:input_tokens] = input_tokens
             @messages.last[:output_tokens] = output_tokens
+
+            model_key = model || @model
+            @token_usage_by_model[model_key][:input_tokens] += input_tokens.to_i
+            @token_usage_by_model[model_key][:output_tokens] += output_tokens.to_i
           end
         end
 
         def clear_messages!
           @mutex.synchronize do
             @messages.clear
+            @token_usage_by_model.clear
             @message_generation += 1
             @dirty = true
           end
@@ -145,6 +151,12 @@ module RubyCode
         def total_output_tokens
           @mutex.synchronize do
             @messages.sum { |message| message[:output_tokens] }
+          end
+        end
+
+        def token_usage_by_model
+          @mutex.synchronize do
+            @token_usage_by_model.transform_values(&:dup)
           end
         end
 

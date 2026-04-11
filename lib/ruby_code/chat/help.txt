@@ -5,7 +5,7 @@ Available commands:
   /model --all       Select from all models (including deprecated)
   /clear             Clear the conversation history
   /history           Show conversation summary
-  /tokens            Show token usage for this session
+  /tokens            Show detailed token usage and cost for this session
   /agent             Show agent mode status
   /agent on          Enable agent mode (tools for file operations)
   /agent off         Disable agent mode (chat only)
