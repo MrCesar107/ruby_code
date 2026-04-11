@@ -8,16 +8,20 @@ Gem::Specification.new do |spec|
   spec.authors = ["Cesar Rodriguez"]
   spec.email = ["cesar.rodriguez.lara54@gmail.com"]
 
-  spec.summary = "TODO: Write a short summary, because RubyGems requires one."
-  spec.description = "TODO: Write a longer description or delete this line."
-  spec.homepage = "TODO: Put your gem's website or public repo URL here."
+  spec.summary = "RubyCode is an AI-powered terminal assistant for coding projects. (Similar to Claude Code or anothers)"
+  spec.description = "RubyCode is a terminal-based AI coding assistant built in Ruby. " \
+                     "It provides a full TUI chat interface with support for multiple LLM providers " \
+                     "(OpenAI, Anthropic, etc.), an agent mode with filesystem tools for reading, writing, " \
+                     "and editing project files, a plan mode for structured task planning, " \
+                     "and a plugin system for extensibility."
+  spec.homepage = "https://github.com/MrCesar107/ruby_code"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.3.0"
 
-  spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
+  spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "TODO: Put your gem's public repo URL here."
-  spec.metadata["changelog_uri"] = "TODO: Put your gem's CHANGELOG.md URL here."
+  spec.metadata["source_code_uri"] = "https://github.com/MrCesar107/ruby_code"
+  spec.metadata["changelog_uri"] = "https://github.com/MrCesar107/ruby_code/blob/main/CHANGELOG.md"
   spec.metadata["rubygems_mfa_required"] = "true"
 
   # Specify which files should be added to the gem when it is released.
