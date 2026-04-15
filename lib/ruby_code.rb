@@ -6,7 +6,7 @@ require_relative "ruby_code/auth/auth_manager"
 require_relative "ruby_code/initializer"
 require_relative "ruby_code/plugins"
 
-raise "This gem requires Ruby 3.2.0 or higher" if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2.0")
+raise "This gem requires Ruby 3.3.0 or higher" if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.3.0")
 
 # Main module for the RubyCode gem
 module RubyCode
