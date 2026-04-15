@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/plugins/base"
-require "ruby_code/plugins/registry"
+require "ruby_coded/plugins/base"
+require "ruby_coded/plugins/registry"
 
 class TestPluginRegistry < Minitest::Test
   def setup
-    @registry = RubyCode::Plugins::Registry.new
+    @registry = RubyCoded::Plugins::Registry.new
   end
 
   def test_starts_empty
@@ -112,7 +112,7 @@ class TestPluginRegistry < Minitest::Test
   module DummyRendererModule; end
   module CommandHandlerModule; end
 
-  class DummyPlugin < RubyCode::Plugins::Base
+  class DummyPlugin < RubyCoded::Plugins::Base
     def self.plugin_name = :dummy
     def self.state_extension = DummyStateModule
     def self.input_extension = DummyInputModule
@@ -121,11 +121,11 @@ class TestPluginRegistry < Minitest::Test
     def self.render_method = :render_dummy
   end
 
-  class EmptyPlugin < RubyCode::Plugins::Base
+  class EmptyPlugin < RubyCoded::Plugins::Base
     def self.plugin_name = :empty
   end
 
-  class CommandPlugin < RubyCode::Plugins::Base
+  class CommandPlugin < RubyCoded::Plugins::Base
     def self.plugin_name = :command_test
     def self.commands = { "/deploy" => :cmd_deploy }
     def self.command_descriptions = { "/deploy" => "Deploy the app" }

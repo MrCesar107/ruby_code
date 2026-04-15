@@ -2,9 +2,9 @@
 # frozen_string_literal: true
 
 require "bundler/setup"
-require "ruby_code"
+require "ruby_coded"
 
-RubyCode.start
+RubyCoded.start
 
 require "irb"
 IRB.start(__FILE__)

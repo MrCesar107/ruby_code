@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/plugins"
-require "ruby_code/chat/command_handler"
-require "ruby_code/chat/state"
+require "ruby_coded/plugins"
+require "ruby_coded/chat/command_handler"
+require "ruby_coded/chat/state"
 
 class TestAgentCommands < Minitest::Test
   def setup
@@ -11,9 +11,9 @@ class TestAgentCommands < Minitest::Test
     @tmpdir = Dir.mktmpdir
     Dir.chdir(@tmpdir)
 
-    @state = RubyCode::Chat::State.new(model: "test-model")
+    @state = RubyCoded::Chat::State.new(model: "test-model")
     @llm_bridge = MockAgentBridge.new
-    @handler = RubyCode::Chat::CommandHandler.new(
+    @handler = RubyCoded::Chat::CommandHandler.new(
       @state,
       llm_bridge: @llm_bridge
     )

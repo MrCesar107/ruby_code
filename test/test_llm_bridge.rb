@@ -2,12 +2,12 @@
 
 require "test_helper"
 require "ruby_llm"
-require "ruby_code/chat/llm_bridge"
-require "ruby_code/chat/state"
+require "ruby_coded/chat/llm_bridge"
+require "ruby_coded/chat/state"
 
 class TestLLMBridge < Minitest::Test
   def setup
-    @state = RubyCode::Chat::State.new(model: "test-model")
+    @state = RubyCoded::Chat::State.new(model: "test-model")
   end
 
   def test_attempt_with_retries_succeeds_on_first_try
@@ -232,7 +232,7 @@ class TestLLMBridge < Minitest::Test
 
   def build_bridge_with_chat(chat)
     RubyLLM.stub(:chat, chat) do
-      return RubyCode::Chat::LLMBridge.new(@state)
+      return RubyCoded::Chat::LLMBridge.new(@state)
     end
   end
 
@@ -283,7 +283,7 @@ class TestLLMBridge < Minitest::Test
 
   def build_bridge_with_configurable_chat(chat)
     RubyLLM.stub(:chat, chat) do
-      return RubyCode::Chat::LLMBridge.new(@state)
+      return RubyCoded::Chat::LLMBridge.new(@state)
     end
   end
 

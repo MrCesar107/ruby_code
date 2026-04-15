@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/chat/state"
-require "ruby_code/chat/renderer/status_bar"
+require "ruby_coded/chat/state"
+require "ruby_coded/chat/renderer/status_bar"
 
 class TestRendererStatusBar < Minitest::Test
   def setup
-    @state = RubyCode::Chat::State.new(model: "gpt-4o")
+    @state = RubyCoded::Chat::State.new(model: "gpt-4o")
     @tui = MockTui.new
     @host = StatusBarHost.new(@tui, @state)
   end
@@ -172,7 +172,7 @@ class TestRendererStatusBar < Minitest::Test
   # --- Host and Mocks ---
 
   class StatusBarHost
-    include RubyCode::Chat::Renderer::StatusBar
+    include RubyCoded::Chat::Renderer::StatusBar
 
     def initialize(tui, state)
       @tui = tui

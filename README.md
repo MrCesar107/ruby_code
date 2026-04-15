@@ -1,13 +1,13 @@
-# RubyCode
+# RubyCoded
 
 ```
          /\
         /  \
        /    \         ____        _              ____          _
-      /------\       |  _ \ _   _| |__  _   _   / ___|___   __| | ___
-     /  \  /  \      | |_) | | | | '_ \| | | | | |   / _ \ / _` |/ _ \
-    /    \/    \     |  _ <| |_| | |_) | |_| | | |__| (_) | (_| |  __/
-    \    /\    /     |_| \_\\__,_|_.__/ \__, |  \____\___/ \__,_|\___|
+       /------\       |  _ \ _   _| |__  _   _   / ___|___   __| | ___   __| |
+     /  \  /  \      | |_) | | | | '_ \| | | | | |   / _ \ / _` |/ _ \ / _` |
+    /    \/    \     |  _ <| |_| | |_) | |_| | | |__| (_) | (_| |  __/ (_| |
+    \    /\    /     |_| \_\\__,_|_.__/ \__, |  \____\___/ \__,_|\___| \__,_|
      \  /  \  /                         |___/
       \/    \/
        \    /
@@ -36,7 +36,7 @@ An AI-powered terminal coding assistant built in Ruby. Chat with LLMs, let an ag
 ## Installation
 
 ```bash
-gem install ruby_code
+gem install ruby_coded
 ```
 
 ## Usage
@@ -44,7 +44,7 @@ gem install ruby_code
 Navigate to any project directory and run:
 
 ```bash
-ruby_code
+ruby_coded
 ```
 
 On first launch you'll be asked to authenticate with a provider. After that, you're dropped into chat mode.
@@ -108,7 +108,7 @@ bundle exec rake test
 To run the application locally:
 
 ```bash
-bundle exec exe/ruby_code
+bundle exec exe/ruby_coded
 ```
 
 ## What's next

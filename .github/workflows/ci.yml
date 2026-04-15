@@ -71,6 +71,6 @@ jobs:
           ruby-version: "3.3"
           bundler-cache: true
       - name: Build gem
-        run: gem build ruby_code.gemspec
+        run: gem build ruby_coded.gemspec
       - name: Verify gem was built
-        run: ls ruby_code-*.gem
+        run: ls ruby_coded-*.gem

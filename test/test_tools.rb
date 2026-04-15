@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/tools/read_file_tool"
-require "ruby_code/tools/list_directory_tool"
-require "ruby_code/tools/write_file_tool"
-require "ruby_code/tools/edit_file_tool"
-require "ruby_code/tools/create_directory_tool"
-require "ruby_code/tools/delete_path_tool"
-require "ruby_code/tools/run_command_tool"
+require "ruby_coded/tools/read_file_tool"
+require "ruby_coded/tools/list_directory_tool"
+require "ruby_coded/tools/write_file_tool"
+require "ruby_coded/tools/edit_file_tool"
+require "ruby_coded/tools/create_directory_tool"
+require "ruby_coded/tools/delete_path_tool"
+require "ruby_coded/tools/run_command_tool"
 
 class TestReadFileTool < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
-    @tool = RubyCode::Tools::ReadFileTool.new(project_root: @tmpdir)
+    @tool = RubyCoded::Tools::ReadFileTool.new(project_root: @tmpdir)
   end
 
   def teardown
@@ -49,14 +49,14 @@ class TestReadFileTool < Minitest::Test
   end
 
   def test_risk_level_is_safe
-    assert_equal :safe, RubyCode::Tools::ReadFileTool.risk_level
+    assert_equal :safe, RubyCoded::Tools::ReadFileTool.risk_level
   end
 end
 
 class TestListDirectoryTool < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
-    @tool = RubyCode::Tools::ListDirectoryTool.new(project_root: @tmpdir)
+    @tool = RubyCoded::Tools::ListDirectoryTool.new(project_root: @tmpdir)
   end
 
   def teardown
@@ -96,14 +96,14 @@ class TestListDirectoryTool < Minitest::Test
   end
 
   def test_risk_level_is_safe
-    assert_equal :safe, RubyCode::Tools::ListDirectoryTool.risk_level
+    assert_equal :safe, RubyCoded::Tools::ListDirectoryTool.risk_level
   end
 end
 
 class TestWriteFileTool < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
-    @tool = RubyCode::Tools::WriteFileTool.new(project_root: @tmpdir)
+    @tool = RubyCoded::Tools::WriteFileTool.new(project_root: @tmpdir)
   end
 
   def teardown
@@ -136,14 +136,14 @@ class TestWriteFileTool < Minitest::Test
   end
 
   def test_risk_level_is_confirm
-    assert_equal :confirm, RubyCode::Tools::WriteFileTool.risk_level
+    assert_equal :confirm, RubyCoded::Tools::WriteFileTool.risk_level
   end
 end
 
 class TestEditFileTool < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
-    @tool = RubyCode::Tools::EditFileTool.new(project_root: @tmpdir)
+    @tool = RubyCoded::Tools::EditFileTool.new(project_root: @tmpdir)
   end
 
   def teardown
@@ -175,14 +175,14 @@ class TestEditFileTool < Minitest::Test
   end
 
   def test_risk_level_is_confirm
-    assert_equal :confirm, RubyCode::Tools::EditFileTool.risk_level
+    assert_equal :confirm, RubyCoded::Tools::EditFileTool.risk_level
   end
 end
 
 class TestCreateDirectoryTool < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
-    @tool = RubyCode::Tools::CreateDirectoryTool.new(project_root: @tmpdir)
+    @tool = RubyCoded::Tools::CreateDirectoryTool.new(project_root: @tmpdir)
   end
 
   def teardown
@@ -215,14 +215,14 @@ class TestCreateDirectoryTool < Minitest::Test
   end
 
   def test_risk_level_is_confirm
-    assert_equal :confirm, RubyCode::Tools::CreateDirectoryTool.risk_level
+    assert_equal :confirm, RubyCoded::Tools::CreateDirectoryTool.risk_level
   end
 end
 
 class TestDeletePathTool < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
-    @tool = RubyCode::Tools::DeletePathTool.new(project_root: @tmpdir)
+    @tool = RubyCoded::Tools::DeletePathTool.new(project_root: @tmpdir)
   end
 
   def teardown
@@ -264,14 +264,14 @@ class TestDeletePathTool < Minitest::Test
   end
 
   def test_risk_level_is_dangerous
-    assert_equal :dangerous, RubyCode::Tools::DeletePathTool.risk_level
+    assert_equal :dangerous, RubyCoded::Tools::DeletePathTool.risk_level
   end
 end
 
 class TestRunCommandTool < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
-    @tool = RubyCode::Tools::RunCommandTool.new(project_root: @tmpdir)
+    @tool = RubyCoded::Tools::RunCommandTool.new(project_root: @tmpdir)
   end
 
   def teardown
@@ -297,6 +297,6 @@ class TestRunCommandTool < Minitest::Test
   end
 
   def test_risk_level_is_dangerous
-    assert_equal :dangerous, RubyCode::Tools::RunCommandTool.risk_level
+    assert_equal :dangerous, RubyCoded::Tools::RunCommandTool.risk_level
   end
 end

@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/plugins"
-require "ruby_code/chat/state"
+require "ruby_coded/plugins"
+require "ruby_coded/chat/state"
 
 class TestCommandCompletion < Minitest::Test
   def setup
-    @registry = RubyCode::Plugins::Registry.new
-    @registry.register(RubyCode::Plugins::CommandCompletion::Plugin)
+    @registry = RubyCoded::Plugins::Registry.new
+    @registry.register(RubyCoded::Plugins::CommandCompletion::Plugin)
 
     state_class = build_state_class
     @registry.apply_extensions!(
@@ -184,7 +184,7 @@ class TestCommandCompletion < Minitest::Test
   private
 
   def build_state_class
-    Class.new(RubyCode::Chat::State) do
+    Class.new(RubyCoded::Chat::State) do
       # Isolated subclass so plugin modules don't leak between tests.
     end
   end

@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/version"
-require "ruby_code/chat/state"
-require "ruby_code/chat/renderer/chat_panel"
-require "ruby_code/chat/renderer/chat_panel_input"
-require "ruby_code/chat/renderer/chat_panel_thinking"
+require "ruby_coded/version"
+require "ruby_coded/chat/state"
+require "ruby_coded/chat/renderer/chat_panel"
+require "ruby_coded/chat/renderer/chat_panel_input"
+require "ruby_coded/chat/renderer/chat_panel_thinking"
 
 class TestRendererChatPanel < Minitest::Test
   def setup
-    @state = RubyCode::Chat::State.new(model: "gpt-4o")
+    @state = RubyCoded::Chat::State.new(model: "gpt-4o")
     @tui = MockTui.new
     @host = ChatPanelHost.new(@tui, @state)
   end
 
   def test_chat_panel_text_returns_banner_when_no_messages
     text = @host.chat_panel_text
-    assert_includes text, "v#{RubyCode::VERSION}"
+    assert_includes text, "v#{RubyCoded::VERSION}"
   end
 
   def test_chat_panel_text_formats_messages
@@ -342,7 +342,7 @@ class TestRendererChatPanel < Minitest::Test
     @host.render_input_panel(frame, area)
 
     widget, = frame.rendered.first
-    assert_equal "ruby_code> hello world", widget[:text]
+    assert_equal "ruby_coded> hello world", widget[:text]
   end
 
   def test_render_input_panel_shows_empty_prompt
@@ -352,7 +352,7 @@ class TestRendererChatPanel < Minitest::Test
     @host.render_input_panel(frame, area)
 
     widget, = frame.rendered.first
-    assert_equal "ruby_code> ", widget[:text]
+    assert_equal "ruby_coded> ", widget[:text]
   end
 
   def test_render_input_panel_sets_cursor_at_end_of_input
@@ -362,7 +362,7 @@ class TestRendererChatPanel < Minitest::Test
 
     @host.render_input_panel(frame, area)
 
-    prefix_len = "ruby_code> ".length
+    prefix_len = "ruby_coded> ".length
     assert_equal 0 + 1 + prefix_len + 5, frame.cursor_x
     assert_equal 21 + 1, frame.cursor_y
   end
@@ -373,7 +373,7 @@ class TestRendererChatPanel < Minitest::Test
 
     @host.render_input_panel(frame, area)
 
-    prefix_len = "ruby_code> ".length
+    prefix_len = "ruby_coded> ".length
     assert_equal 0 + 1 + prefix_len + 0, frame.cursor_x
     assert_equal 21 + 1, frame.cursor_y
   end
@@ -387,7 +387,7 @@ class TestRendererChatPanel < Minitest::Test
 
     @host.render_input_panel(frame, area)
 
-    prefix_len = "ruby_code> ".length
+    prefix_len = "ruby_coded> ".length
     assert_equal 0 + 1 + prefix_len + 3, frame.cursor_x
   end
 
@@ -404,15 +404,15 @@ class TestRendererChatPanel < Minitest::Test
 
   def test_cover_banner_includes_version
     banner = @host.cover_banner
-    assert_includes banner, RubyCode::VERSION
+    assert_includes banner, RubyCoded::VERSION
     refute_includes banner, "%<version>s"
   end
 
 
   class ChatPanelHost
-    include RubyCode::Chat::Renderer::ChatPanel
-    include RubyCode::Chat::Renderer::ChatPanelInput
-    include RubyCode::Chat::Renderer::ChatPanelThinking
+    include RubyCoded::Chat::Renderer::ChatPanel
+    include RubyCoded::Chat::Renderer::ChatPanelInput
+    include RubyCoded::Chat::Renderer::ChatPanelThinking
 
     def initialize(tui, state)
       @tui = tui

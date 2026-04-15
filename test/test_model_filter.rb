@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/chat/model_filter"
+require "ruby_coded/chat/model_filter"
 
 class TestModelFilter < Minitest::Test
   FakeModel = Struct.new(:id, :provider, :created_at, :family)
@@ -13,7 +13,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("gpt-4o", "openai", recent_time, "gpt")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["gpt-4o"], result.map(&:id)
   end
@@ -25,7 +25,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("gpt-4o", "openai", recent_time, "gpt")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["gpt-4o"], result.map(&:id)
   end
@@ -36,7 +36,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("gpt-4o", "openai", recent_time, "gpt")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["gpt-4o"], result.map(&:id)
   end
@@ -48,7 +48,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("gpt-4o", "openai", recent_time, "gpt")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["gpt-4o"], result.map(&:id)
   end
@@ -63,7 +63,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("gpt-4o", "openai", recent_time, "gpt")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["gpt-4o"], result.map(&:id)
   end
@@ -76,7 +76,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("claude-sonnet-4-20250514", "anthropic", recent_time, "claude-sonnet")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["claude-sonnet-4-20250514"], result.map(&:id)
   end
@@ -88,7 +88,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("o3", "openai", recent_time, "o")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["o3"], result.map(&:id)
   end
@@ -100,7 +100,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("gpt-4o-2024-11-20", "openai", recent_time, "gpt")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
     ids = result.map(&:id)
 
     assert_includes ids, "gpt-4o"
@@ -114,7 +114,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("some-new-model", "openai", recent_time, "other")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["some-new-model"], result.map(&:id)
   end
@@ -125,7 +125,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("some-new-model", "openai", recent_time, "other")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
     ids = result.map(&:id)
 
     assert_includes ids, "azure-gpt-4o"
@@ -138,7 +138,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("gemini-flash-latest", "gemini", old_time, "gemini-flash")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["gemini-flash-latest"], result.map(&:id)
   end
@@ -149,7 +149,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("claude-3-7-sonnet-20250219", "anthropic", recent_time, "claude-sonnet")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["claude-3-7-sonnet-latest"], result.map(&:id)
   end
@@ -160,7 +160,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("gpt-5.1-2025-11-13", "openai", recent_time, "gpt5")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
     ids = result.map(&:id)
 
     assert_includes ids, "gpt-5-2025-08-07"
@@ -174,7 +174,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("gemini-2.0-flash-2025-01-01", "vertexai", recent_time, "gemini-flash")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
     ids = result.map(&:id)
 
     assert_includes ids, "gemini-flash-latest"
@@ -190,7 +190,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("codestral-mamba", "mistral", recent_time, "devstral")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
     ids = result.map(&:id)
 
     assert_includes ids, "codestral-latest"
@@ -198,7 +198,7 @@ class TestModelFilter < Minitest::Test
   end
 
   def test_filter_with_empty_list
-    result = RubyCode::Chat::ModelFilter.filter([])
+    result = RubyCoded::Chat::ModelFilter.filter([])
 
     assert_empty result
   end
@@ -206,7 +206,7 @@ class TestModelFilter < Minitest::Test
   def test_filter_preserves_models_with_string_ids
     model = "some-model-string"
 
-    result = RubyCode::Chat::ModelFilter.filter([model])
+    result = RubyCoded::Chat::ModelFilter.filter([model])
 
     assert_equal ["some-model-string"], result.map(&:to_s)
   end
@@ -217,7 +217,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("adaptive-model", "openai", recent_time, "other")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["adaptive-model"], result.map(&:id)
   end
@@ -230,7 +230,7 @@ class TestModelFilter < Minitest::Test
       FakeModel.new("model-outside", "openai", just_outside, "other")
     ]
 
-    result = RubyCode::Chat::ModelFilter.filter(models)
+    result = RubyCoded::Chat::ModelFilter.filter(models)
 
     assert_equal ["model-within"], result.map(&:id)
   end

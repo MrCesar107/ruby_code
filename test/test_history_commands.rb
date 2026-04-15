@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/chat/state"
-require "ruby_code/chat/command_handler/history_commands"
-require "ruby_code/chat/command_handler/token_commands"
-require "ruby_code/chat/command_handler/token_formatting"
+require "ruby_coded/chat/state"
+require "ruby_coded/chat/command_handler/history_commands"
+require "ruby_coded/chat/command_handler/token_commands"
+require "ruby_coded/chat/command_handler/token_formatting"
 
 class TestHistoryCommands < Minitest::Test
   def setup
-    @state = RubyCode::Chat::State.new(model: "gpt-4o")
+    @state = RubyCoded::Chat::State.new(model: "gpt-4o")
     @host = HistoryCommandsHost.new(@state)
   end
 
@@ -154,7 +154,7 @@ class TestHistoryCommands < Minitest::Test
   end
 
   def test_cmd_tokens_shows_pricing_unavailable_for_unknown_model
-    @state = RubyCode::Chat::State.new(model: "unknown-model-xyz")
+    @state = RubyCoded::Chat::State.new(model: "unknown-model-xyz")
     @host = HistoryCommandsHost.new(@state)
 
     @state.add_message(:assistant, "Hi")
@@ -179,7 +179,7 @@ class TestHistoryCommands < Minitest::Test
   end
 
   def test_cmd_tokens_shows_cost_na_when_no_pricing
-    @state = RubyCode::Chat::State.new(model: "unknown-model-xyz")
+    @state = RubyCoded::Chat::State.new(model: "unknown-model-xyz")
     @host = HistoryCommandsHost.new(@state)
 
     @state.add_message(:assistant, "Hi")
@@ -236,9 +236,9 @@ class TestHistoryCommands < Minitest::Test
   end
 
   class HistoryCommandsHost
-    include RubyCode::Chat::CommandHandler::HistoryCommands
-    include RubyCode::Chat::CommandHandler::TokenCommands
-    include RubyCode::Chat::CommandHandler::TokenFormatting
+    include RubyCoded::Chat::CommandHandler::HistoryCommands
+    include RubyCoded::Chat::CommandHandler::TokenCommands
+    include RubyCoded::Chat::CommandHandler::TokenFormatting
 
     def initialize(state)
       @state = state

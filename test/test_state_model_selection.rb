@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/chat/state"
+require "ruby_coded/chat/state"
 
 class TestStateModelSelection < Minitest::Test
   def setup
-    @state = RubyCode::Chat::State.new(model: "gpt-4o")
+    @state = RubyCoded::Chat::State.new(model: "gpt-4o")
   end
 
   def test_model_select_is_false_by_default

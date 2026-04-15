@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/version"
-require "ruby_code/initializer"
+require "ruby_coded/version"
+require "ruby_coded/initializer"
 
 class TestInitializer < Minitest::Test
   def setup
@@ -25,7 +25,7 @@ class TestInitializer < Minitest::Test
       TTY::Prompt.stub(:new, mock_prompt) do
         stub_user_config do
           stub_auth_manager do
-            RubyCode::Initializer.new
+            RubyCoded::Initializer.new
           end
         end
       end
@@ -42,7 +42,7 @@ class TestInitializer < Minitest::Test
     TTY::Prompt.stub(:new, mock_prompt) do
       stub_user_config do
         stub_auth_manager do
-          RubyCode::Initializer.new
+          RubyCoded::Initializer.new
         end
       end
     end
@@ -60,7 +60,7 @@ class TestInitializer < Minitest::Test
       TTY::Prompt.stub(:new, mock_prompt) do
         stub_user_config do
           stub_auth_manager do
-            capture_io { RubyCode::Initializer.new }
+            capture_io { RubyCoded::Initializer.new }
           end
         end
       end
@@ -73,7 +73,7 @@ class TestInitializer < Minitest::Test
     TTY::Prompt.stub(:new, mock_prompt) do
       stub_user_config do
         stub_auth_manager do
-          capture_io { RubyCode::Initializer.new }
+          capture_io { RubyCoded::Initializer.new }
         end
       end
     end
@@ -92,10 +92,10 @@ class TestInitializer < Minitest::Test
 
     mock_prompt = build_prompt_stub
     TTY::Prompt.stub(:new, mock_prompt) do
-      RubyCode::Auth::AuthManager.stub(:new, auth_mock) do
+      RubyCoded::Auth::AuthManager.stub(:new, auth_mock) do
         stub_user_config do
           stub_chat_app do
-            capture_io { RubyCode::Initializer.new }
+            capture_io { RubyCoded::Initializer.new }
           end
         end
       end
@@ -115,10 +115,10 @@ class TestInitializer < Minitest::Test
 
     mock_prompt = build_prompt_stub
     TTY::Prompt.stub(:new, mock_prompt) do
-      RubyCode::Auth::AuthManager.stub(:new, auth_mock) do
+      RubyCoded::Auth::AuthManager.stub(:new, auth_mock) do
         stub_user_config do
           stub_chat_app do
-            capture_io { RubyCode::Initializer.new }
+            capture_io { RubyCoded::Initializer.new }
           end
         end
       end
@@ -149,14 +149,14 @@ class TestInitializer < Minitest::Test
 
   def stub_user_config(&block)
     config_path = @config_path
-    RubyCode::UserConfig.stub(:new, ->(*_args, **_kwargs) { RubyCode::UserConfig.allocate.tap { |c| c.send(:initialize, config_path: config_path) } }, &block)
+    RubyCoded::UserConfig.stub(:new, ->(*_args, **_kwargs) { RubyCoded::UserConfig.allocate.tap { |c| c.send(:initialize, config_path: config_path) } }, &block)
   end
 
   def stub_chat_app(&)
     app_mock = Object.new
     app_mock.define_singleton_method(:run) { nil }
 
-    RubyCode::Chat::App.stub(:new, app_mock, &)
+    RubyCoded::Chat::App.stub(:new, app_mock, &)
   end
 
   def stub_auth_manager(&block)
@@ -165,7 +165,7 @@ class TestInitializer < Minitest::Test
     auth_mock.define_singleton_method(:configure_ruby_llm!) { nil }
     auth_mock.define_singleton_method(:authenticated_provider_names) { [:openai] }
 
-    RubyCode::Auth::AuthManager.stub(:new, auth_mock) do
+    RubyCoded::Auth::AuthManager.stub(:new, auth_mock) do
       stub_chat_app(&block)
     end
   end

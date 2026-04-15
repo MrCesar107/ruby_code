@@ -4,11 +4,11 @@ require "test_helper"
 require "securerandom"
 require "base64"
 require "digest"
-require "ruby_code/auth/pkce"
+require "ruby_coded/auth/pkce"
 
 class TestPKCE < Minitest::Test
   def setup
-    @result = RubyCode::Auth::PKCE.generate
+    @result = RubyCoded::Auth::PKCE.generate
   end
 
   def test_generate_returns_a_hash
@@ -57,7 +57,7 @@ class TestPKCE < Minitest::Test
   end
 
   def test_each_call_generates_unique_values
-    other = RubyCode::Auth::PKCE.generate
+    other = RubyCoded::Auth::PKCE.generate
     refute_equal @result[:verifier], other[:verifier]
     refute_equal @result[:challenge], other[:challenge]
   end

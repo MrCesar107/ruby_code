@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/auth/providers/anthropic"
+require "ruby_coded/auth/providers/anthropic"
 
 class TestProvidersAnthropic < Minitest::Test
   def test_display_name
@@ -53,6 +53,6 @@ class TestProvidersAnthropic < Minitest::Test
   private
 
   def provider
-    RubyCode::Auth::Providers::Anthropic
+    RubyCoded::Auth::Providers::Anthropic
   end
 end

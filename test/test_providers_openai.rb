@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/auth/providers/openai"
+require "ruby_coded/auth/providers/openai"
 
 class TestProvidersOpenAI < Minitest::Test
   def test_display_name
@@ -61,6 +61,6 @@ class TestProvidersOpenAI < Minitest::Test
   private
 
   def provider
-    RubyCode::Auth::Providers::OpenAI
+    RubyCoded::Auth::Providers::OpenAI
   end
 end

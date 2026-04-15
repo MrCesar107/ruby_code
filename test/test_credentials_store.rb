@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/auth/credentials_store"
+require "ruby_coded/auth/credentials_store"
 
 class TestCredentialsStore < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
     @config_path = File.join(@tmpdir, "config.yaml")
-    @store = RubyCode::Auth::CredentialsStore.new(config_path: @config_path)
+    @store = RubyCoded::Auth::CredentialsStore.new(config_path: @config_path)
   end
 
   def teardown

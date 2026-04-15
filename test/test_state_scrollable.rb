@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/chat/state"
+require "ruby_coded/chat/state"
 
 class TestStateScrollable < Minitest::Test
   def setup
-    @state = RubyCode::Chat::State.new(model: "gpt-4o")
+    @state = RubyCoded::Chat::State.new(model: "gpt-4o")
   end
 
   def test_scroll_offset_starts_at_zero

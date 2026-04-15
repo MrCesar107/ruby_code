@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/auth/providers/openai"
-require "ruby_code/auth/providers/anthropic"
-require "ruby_code/strategies/api_key_strategy"
+require "ruby_coded/auth/providers/openai"
+require "ruby_coded/auth/providers/anthropic"
+require "ruby_coded/strategies/api_key_strategy"
 
 class TestAPIKeyStrategy < Minitest::Test
   def setup
-    @provider = RubyCode::Auth::Providers::OpenAI
-    @strategy = RubyCode::Strategies::APIKeyStrategy.new(@provider)
+    @provider = RubyCoded::Auth::Providers::OpenAI
+    @strategy = RubyCoded::Strategies::APIKeyStrategy.new(@provider)
   end
 
   def test_authenticate_returns_credentials_with_valid_key
@@ -92,8 +92,8 @@ end
 
 class TestAPIKeyStrategyWithAnthropic < Minitest::Test
   def setup
-    @provider = RubyCode::Auth::Providers::Anthropic
-    @strategy = RubyCode::Strategies::APIKeyStrategy.new(@provider)
+    @provider = RubyCoded::Auth::Providers::Anthropic
+    @strategy = RubyCoded::Strategies::APIKeyStrategy.new(@provider)
   end
 
   def test_authenticate_returns_credentials_with_valid_anthropic_key

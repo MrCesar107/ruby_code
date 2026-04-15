@@ -1,21 +1,21 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/chat/command_handler"
-require "ruby_code/chat/state"
-require "ruby_code/auth/credentials_store"
-require "ruby_code/auth/auth_manager"
+require "ruby_coded/chat/command_handler"
+require "ruby_coded/chat/state"
+require "ruby_coded/auth/credentials_store"
+require "ruby_coded/auth/auth_manager"
 
 class TestCommandHandler < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
     @config_path = File.join(@tmpdir, "config.yaml")
 
-    @state = RubyCode::Chat::State.new(model: "gpt-4o")
+    @state = RubyCoded::Chat::State.new(model: "gpt-4o")
     @llm_bridge = MockLLMBridge.new
-    @credentials_store = RubyCode::Auth::CredentialsStore.new(config_path: @config_path)
-    @user_config = RubyCode::UserConfig.new(config_path: @config_path)
-    @handler = RubyCode::Chat::CommandHandler.new(
+    @credentials_store = RubyCoded::Auth::CredentialsStore.new(config_path: @config_path)
+    @user_config = RubyCoded::UserConfig.new(config_path: @config_path)
+    @handler = RubyCoded::Chat::CommandHandler.new(
       @state,
       llm_bridge: @llm_bridge,
       user_config: @user_config,
@@ -276,7 +276,7 @@ class TestCommandHandler < Minitest::Test
   end
 
   def test_model_select_without_credentials_store_falls_back
-    handler_without_store = RubyCode::Chat::CommandHandler.new(
+    handler_without_store = RubyCoded::Chat::CommandHandler.new(
       @state,
       llm_bridge: @llm_bridge,
       user_config: @user_config
@@ -297,16 +297,16 @@ class TestCommandHandler < Minitest::Test
   private
 
   def build_handler
-    RubyCode::Chat::CommandHandler.new(
+    RubyCoded::Chat::CommandHandler.new(
       @state,
       llm_bridge: @llm_bridge,
       user_config: @user_config,
-      credentials_store: RubyCode::Auth::CredentialsStore.new(config_path: @config_path)
+      credentials_store: RubyCoded::Auth::CredentialsStore.new(config_path: @config_path)
     )
   end
 
   def store_credentials(provider_name, credentials)
-    config = RubyCode::UserConfig.new(config_path: @config_path)
+    config = RubyCoded::UserConfig.new(config_path: @config_path)
     cfg = config.full_config
     cfg["providers"] ||= {}
     cfg["providers"][provider_name.to_s] = credentials

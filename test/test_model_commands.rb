@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/chat/state"
-require "ruby_code/chat/command_handler/model_commands"
+require "ruby_coded/chat/state"
+require "ruby_coded/chat/command_handler/model_commands"
 
 class TestModelCommands < Minitest::Test
   def setup
-    @state = RubyCode::Chat::State.new(model: "gpt-4o")
+    @state = RubyCoded::Chat::State.new(model: "gpt-4o")
     @llm_bridge = MockLLMBridge.new
     @user_config = MockUserConfig.new
     @host = ModelCommandsHost.new(@state, @llm_bridge, @user_config)
@@ -158,7 +158,7 @@ class TestModelCommands < Minitest::Test
   end
 
   class ModelCommandsHost
-    include RubyCode::Chat::CommandHandler::ModelCommands
+    include RubyCoded::Chat::CommandHandler::ModelCommands
 
     attr_accessor :models, :authenticated_models
 

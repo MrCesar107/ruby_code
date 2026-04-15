@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/chat/state"
+require "ruby_coded/chat/state"
 
 class TestToolConfirmation < Minitest::Test
   def setup
-    @state = RubyCode::Chat::State.new(model: "test-model")
+    @state = RubyCoded::Chat::State.new(model: "test-model")
   end
 
   def test_initially_not_awaiting_confirmation

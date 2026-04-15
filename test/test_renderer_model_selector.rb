@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "ruby_code/chat/state"
-require "ruby_code/chat/renderer/model_selector"
+require "ruby_coded/chat/state"
+require "ruby_coded/chat/renderer/model_selector"
 
 class TestRendererModelSelector < Minitest::Test
   def setup
-    @state = RubyCode::Chat::State.new(model: "gpt-4o")
+    @state = RubyCoded::Chat::State.new(model: "gpt-4o")
     @tui = MockTui.new
     @host = ModelSelectorHost.new(@tui, @state)
   end
@@ -121,7 +121,7 @@ class TestRendererModelSelector < Minitest::Test
   FakeModel = Struct.new(:id, :provider)
 
   class ModelSelectorHost
-    include RubyCode::Chat::Renderer::ModelSelector
+    include RubyCoded::Chat::Renderer::ModelSelector
 
     def initialize(tui, state)
       @tui = tui
