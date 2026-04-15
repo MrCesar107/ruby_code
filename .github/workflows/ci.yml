@@ -24,6 +24,7 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+          bundler: "4.0.3"
           bundler-cache: true
       - name: Run tests
         run: bundle exec rake test
@@ -37,6 +38,7 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
+          bundler: "4.0.3"
           bundler-cache: true
       - name: Run RuboCop
         run: bundle exec rake rubocop
@@ -51,6 +53,7 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
+          bundler: "4.0.3"
           bundler-cache: true
       - name: Build gem
         run: gem build ruby_code.gemspec
