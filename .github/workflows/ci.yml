@@ -20,11 +20,12 @@ jobs:
     continue-on-error: ${{ matrix.experimental || false }}
     steps:
       - uses: actions/checkout@v4
+      - name: Remove Gemfile.lock for CI compatibility
+        run: rm -f Gemfile.lock
       - uses: dtolnay/rust-toolchain@stable
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-          bundler: "4.0.3"
           bundler-cache: true
       - name: Run tests
         run: bundle exec rake test
@@ -34,11 +35,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Remove Gemfile.lock for CI compatibility
+        run: rm -f Gemfile.lock
       - uses: dtolnay/rust-toolchain@stable
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
-          bundler: "4.0.3"
           bundler-cache: true
       - name: Run RuboCop
         run: bundle exec rake rubocop
@@ -49,11 +51,12 @@ jobs:
     needs: [test, lint]
     steps:
       - uses: actions/checkout@v4
+      - name: Remove Gemfile.lock for CI compatibility
+        run: rm -f Gemfile.lock
       - uses: dtolnay/rust-toolchain@stable
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
-          bundler: "4.0.3"
           bundler-cache: true
       - name: Build gem
         run: gem build ruby_code.gemspec

@@ -13,11 +13,12 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      - name: Remove Gemfile.lock for CI compatibility
+        run: rm -f Gemfile.lock
       - uses: dtolnay/rust-toolchain@stable
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
-          bundler: "4.0.3"
           bundler-cache: true
       - name: Build gem
         run: gem build ruby_code.gemspec
