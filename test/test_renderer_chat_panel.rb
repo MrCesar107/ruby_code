@@ -4,6 +4,8 @@ require "test_helper"
 require "ruby_code/version"
 require "ruby_code/chat/state"
 require "ruby_code/chat/renderer/chat_panel"
+require "ruby_code/chat/renderer/chat_panel_input"
+require "ruby_code/chat/renderer/chat_panel_thinking"
 
 class TestRendererChatPanel < Minitest::Test
   def setup
