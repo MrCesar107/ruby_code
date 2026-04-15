@@ -48,6 +48,7 @@ module RubyCode
 
       def toggle_agentic_mode!(enabled)
         @agentic_mode = enabled
+        @state.agentic_mode = enabled
         if enabled && @plan_mode
           @plan_mode = false
           @state.deactivate_plan_mode!
@@ -66,6 +67,7 @@ module RubyCode
         @plan_mode = enabled
         if enabled && @agentic_mode
           @agentic_mode = false
+          @state.agentic_mode = false
           @state.disable_auto_approve!
         end
         reconfigure_chat!

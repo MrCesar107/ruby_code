@@ -3,6 +3,8 @@
 require "test_helper"
 require "ruby_code/chat/state"
 require "ruby_code/chat/command_handler/history_commands"
+require "ruby_code/chat/command_handler/token_commands"
+require "ruby_code/chat/command_handler/token_formatting"
 
 class TestHistoryCommands < Minitest::Test
   def setup

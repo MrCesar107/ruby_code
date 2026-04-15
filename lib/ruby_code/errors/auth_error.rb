@@ -5,7 +5,7 @@ module RubyCode
     # Authentication error
     class AuthError < StandardError
       def initialize(message = "Authentication failed")
-        super
+        super(message)
       end
     end
   end

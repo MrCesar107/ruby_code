@@ -65,8 +65,8 @@ module RubyCode
       end
 
       def validate_callback!(result, state)
-        raise Auth::Errors::AuthError, result[:error] if result[:error]
-        raise Auth::Errors::AuthError, "State mismatch" if result[:state] != state
+        raise RubyCode::Errors::AuthError, result[:error] if result[:error]
+        raise RubyCode::Errors::AuthError, "State mismatch" if result[:state] != state
       end
 
       def build_token_response(tokens)

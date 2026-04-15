@@ -38,6 +38,7 @@ module RubyCode
         @messages = []
         @streaming = false
         @should_quit = false
+        @agentic_mode = false
         @mutex = Mutex.new
         @dirty = true
         @last_render_at = 0.0
@@ -63,6 +64,15 @@ module RubyCode
 
       def streaming?
         @streaming
+      end
+
+      def agentic_mode?
+        @agentic_mode
+      end
+
+      def agentic_mode=(value)
+        @agentic_mode = value
+        mark_dirty!
       end
 
       def should_quit?

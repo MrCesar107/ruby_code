@@ -73,9 +73,7 @@ module RubyCode
         end
 
         def agent_mode_active?
-          @state.respond_to?(:mode) && !@state.streaming? &&
-            defined?(@llm_bridge) && @llm_bridge.respond_to?(:agentic_mode) &&
-            @llm_bridge.agentic_mode
+          @state.respond_to?(:agentic_mode?) && @state.agentic_mode?
         end
 
         def chat_panel_text
