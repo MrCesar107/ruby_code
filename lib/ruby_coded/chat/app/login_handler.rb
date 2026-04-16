@@ -49,6 +49,7 @@ module RubyCoded
           credentials = { "auth_method" => "api_key", "key" => key }
           @credentials_store.store(@state.login_provider, credentials)
           @auth_manager&.configure_ruby_llm!
+          recreate_bridge!
           @state.exit_login_flow!
           @state.add_message(:system, "Logged in to #{provider.display_name} with API key.")
         end

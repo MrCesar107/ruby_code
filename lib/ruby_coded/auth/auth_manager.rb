@@ -67,6 +67,7 @@ module RubyCoded
           PROVIDERS.each do |name, provider|
             credentials = credential_store.retrieve(name)
             next unless credentials
+            next if name == :openai && credentials["auth_method"] == "oauth"
 
             credentials = refresh_if_expired(name, provider, credentials)
             key = extract_api_key(credentials)

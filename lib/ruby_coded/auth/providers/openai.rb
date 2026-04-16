@@ -3,7 +3,9 @@
 module RubyCoded
   module Auth
     module Providers
-      # OpenAI provider's configuration
+      # OpenAI provider's configuration.
+      # OAuth authenticates via ChatGPT Plus/Pro subscription (Codex backend).
+      # API key authenticates via OpenAI Platform API credits.
       module OpenAI
         def self.display_name
           "OpenAI"
@@ -16,9 +18,9 @@ module RubyCoded
         def self.auth_methods
           [
             { key: :oauth,
-              label: "With your OpenAI account (requires API credits, " \
-                     "your ChatGPT subscription does not cover API usage)" },
-            { key: :api_key, label: "With an OpenAI API key (requires API credits at platform.openai.com)" }
+              label: "With your ChatGPT Plus/Pro subscription (no API credits needed)" },
+            { key: :api_key,
+              label: "With an OpenAI API key (requires API credits at platform.openai.com)" }
           ]
         end
 
@@ -43,11 +45,23 @@ module RubyCoded
         end
 
         def self.scopes
-          "offline_access"
+          "openid profile email offline_access"
         end
 
         def self.ruby_llm_key
           :openai_api_key
+        end
+
+        def self.codex_auth_params
+          {
+            id_token_add_organizations: "true",
+            codex_cli_simplified_flow: "true",
+            originator: "codex_cli_rs"
+          }
+        end
+
+        def self.codex_base_url
+          "https://chatgpt.com/backend-api"
         end
       end
     end

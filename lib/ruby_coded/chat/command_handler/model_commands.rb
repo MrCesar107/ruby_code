@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../model_filter"
+require_relative "../codex_models"
 
 module RubyCoded
   module Chat
@@ -46,7 +47,7 @@ module RubyCoded
 
         def open_model_selector(show_all: false)
           models = fetch_models_for_authenticated_providers
-          models = ModelFilter.filter(models) unless show_all
+          models = ModelFilter.filter(models) unless show_all || codex_oauth_active?
 
           if models.empty?
             @state.add_message(:system,
@@ -64,10 +65,15 @@ module RubyCoded
           models = []
 
           Auth::AuthManager::PROVIDERS.each_key do |name|
-            next unless @credentials_store.retrieve(name)
+            creds = @credentials_store.retrieve(name)
+            next unless creds
 
-            provider_models = RubyLLM.models.by_provider(name).chat_models.to_a
-            models.concat(provider_models)
+            if name == :openai && creds["auth_method"] == "oauth"
+              models.concat(CodexModels.all)
+            else
+              provider_models = RubyLLM.models.by_provider(name).chat_models.to_a
+              models.concat(provider_models)
+            end
           end
           models
         rescue StandardError
@@ -84,6 +90,13 @@ module RubyCoded
           return model.id if model.respond_to?(:id)
 
           model.to_s
+        end
+
+        def codex_oauth_active?
+          return false unless @credentials_store
+
+          creds = @credentials_store.retrieve(:openai)
+          creds && creds["auth_method"] == "oauth"
         end
       end
     end

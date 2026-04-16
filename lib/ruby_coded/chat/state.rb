@@ -27,7 +27,7 @@ module RubyCoded
       attr_reader :input_buffer, :cursor_position, :input_scroll_offset, :messages, :scroll_offset,
                   :mode, :model_list, :model_select_index, :model_select_filter,
                   :streaming, :mutex, :tui_suspend_reason
-      attr_accessor :model, :should_quit
+      attr_accessor :model, :should_quit, :codex_mode
 
       MIN_RENDER_INTERVAL = 0.05
 
@@ -41,6 +41,7 @@ module RubyCoded
         @streaming = false
         @should_quit = false
         @agentic_mode = false
+        @codex_mode = false
         @mutex = Mutex.new
         @dirty = true
         @last_render_at = 0.0

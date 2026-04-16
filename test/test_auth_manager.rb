@@ -125,7 +125,7 @@ class TestAuthManager < Minitest::Test
     assert_equal "sk-from-config", configured_key
   end
 
-  def test_configure_ruby_llm_sets_access_token_from_oauth_credentials
+  def test_configure_ruby_llm_skips_openai_oauth_credentials
     store_credentials(:openai, {
                         "auth_method" => "oauth",
                         "access_token" => "eyJoauth",
@@ -134,19 +134,17 @@ class TestAuthManager < Minitest::Test
                       })
     manager = RubyCoded::Auth::AuthManager.new(config_path: @config_path)
 
-    configured_key = nil
+    openai_key_set = false
     RubyLLM.stub(:configure, lambda { |&block|
-      config = Minitest::Mock.new
-      config.expect(:max_retries=, nil, [1])
-      config.expect(:openai_api_key=, nil, ["eyJoauth"])
+      config = Object.new
+      config.define_singleton_method(:max_retries=) { |_v| nil }
+      config.define_singleton_method(:openai_api_key=) { |_v| openai_key_set = true }
       block.call(config)
-      configured_key = "eyJoauth"
-      config.verify
     }) do
       manager.configure_ruby_llm!
     end
 
-    assert_equal "eyJoauth", configured_key
+    refute openai_key_set, "OpenAI OAuth credentials should not be passed to RubyLLM (used by CodexBridge)"
   end
 
   def test_configure_ruby_llm_sets_anthropic_api_key
@@ -235,7 +233,7 @@ class TestAuthManager < Minitest::Test
     assert_nil result
   end
 
-  def test_configure_ruby_llm_refreshes_expired_oauth_token
+  def test_configure_ruby_llm_skips_expired_openai_oauth_token
     expired_credentials = {
       "auth_method" => "oauth",
       "access_token" => "expired-token",
@@ -245,34 +243,20 @@ class TestAuthManager < Minitest::Test
     store_credentials(:openai, expired_credentials)
     manager = RubyCoded::Auth::AuthManager.new(config_path: @config_path)
 
-    refreshed_tokens = {
-      "auth_method" => "oauth",
-      "access_token" => "fresh-token",
-      "refresh_token" => "rt-valid",
-      "expires_at" => (Time.now + 3600).iso8601
-    }
-
-    strategy_mock = Minitest::Mock.new
-    strategy_mock.expect(:refresh, refreshed_tokens, [expired_credentials])
-
-    configured_key = nil
-    RubyCoded::Strategies::OAuthStrategy.stub(:new, strategy_mock) do
-      RubyLLM.stub(:configure, lambda { |&block|
-        config = Object.new
-        config.define_singleton_method(:max_retries=) { |_v| nil }
-        config.define_singleton_method(:openai_api_key=) { |v| configured_key = v }
-        block.call(config)
-      }) do
-        manager.configure_ruby_llm!
-      end
+    openai_key_set = false
+    RubyLLM.stub(:configure, lambda { |&block|
+      config = Object.new
+      config.define_singleton_method(:max_retries=) { |_v| nil }
+      config.define_singleton_method(:openai_api_key=) { |_v| openai_key_set = true }
+      block.call(config)
+    }) do
+      manager.configure_ruby_llm!
     end
 
-    assert_equal "fresh-token", configured_key
-    assert_equal "fresh-token", credential_store.retrieve(:openai)["access_token"]
-    strategy_mock.verify
+    refute openai_key_set, "OpenAI OAuth credentials should be skipped (handled by CodexBridge)"
   end
 
-  def test_configure_ruby_llm_does_not_refresh_valid_oauth_token
+  def test_configure_ruby_llm_skips_valid_openai_oauth_token
     valid_credentials = {
       "auth_method" => "oauth",
       "access_token" => "still-valid",
@@ -282,20 +266,20 @@ class TestAuthManager < Minitest::Test
     store_credentials(:openai, valid_credentials)
     manager = RubyCoded::Auth::AuthManager.new(config_path: @config_path)
 
-    configured_key = nil
+    openai_key_set = false
     RubyLLM.stub(:configure, lambda { |&block|
       config = Object.new
       config.define_singleton_method(:max_retries=) { |_v| nil }
-      config.define_singleton_method(:openai_api_key=) { |v| configured_key = v }
+      config.define_singleton_method(:openai_api_key=) { |_v| openai_key_set = true }
       block.call(config)
     }) do
       manager.configure_ruby_llm!
     end
 
-    assert_equal "still-valid", configured_key
+    refute openai_key_set, "OpenAI OAuth credentials should be skipped (handled by CodexBridge)"
   end
 
-  def test_configure_ruby_llm_falls_back_on_refresh_failure
+  def test_configure_ruby_llm_skips_openai_oauth_even_on_refresh_failure
     expired_credentials = {
       "auth_method" => "oauth",
       "access_token" => "expired-but-fallback",
@@ -305,22 +289,17 @@ class TestAuthManager < Minitest::Test
     store_credentials(:openai, expired_credentials)
     manager = RubyCoded::Auth::AuthManager.new(config_path: @config_path)
 
-    failing_strategy = Object.new
-    failing_strategy.define_singleton_method(:refresh) { |_creds| raise "refresh failed" }
-
-    configured_key = nil
-    RubyCoded::Strategies::OAuthStrategy.stub(:new, failing_strategy) do
-      RubyLLM.stub(:configure, lambda { |&block|
-        config = Object.new
-        config.define_singleton_method(:max_retries=) { |_v| nil }
-        config.define_singleton_method(:openai_api_key=) { |v| configured_key = v }
-        block.call(config)
-      }) do
-        manager.configure_ruby_llm!
-      end
+    openai_key_set = false
+    RubyLLM.stub(:configure, lambda { |&block|
+      config = Object.new
+      config.define_singleton_method(:max_retries=) { |_v| nil }
+      config.define_singleton_method(:openai_api_key=) { |_v| openai_key_set = true }
+      block.call(config)
+    }) do
+      manager.configure_ruby_llm!
     end
 
-    assert_equal "expired-but-fallback", configured_key
+    refute openai_key_set, "OpenAI OAuth credentials should be skipped (handled by CodexBridge)"
   end
 
   def test_configure_ruby_llm_does_not_refresh_api_key_credentials

@@ -11,7 +11,10 @@ require_relative "input_handler"
 require_relative "renderer"
 require_relative "command_handler"
 require_relative "llm_bridge"
+require_relative "codex_bridge"
+require_relative "codex_models"
 require_relative "../auth/credentials_store"
+require_relative "../auth/jwt_decoder"
 require_relative "../auth/pkce"
 require_relative "../auth/oauth_callback_server"
 require_relative "app/event_dispatch"
@@ -32,9 +35,9 @@ module RubyCoded
         @auth_manager = auth_manager
         apply_plugin_extensions!
         @state = State.new(model: model)
-        @llm_bridge = LLMBridge.new(@state)
-        @input_handler = InputHandler.new(@state)
         @credentials_store = Auth::CredentialsStore.new
+        @llm_bridge = create_bridge
+        @input_handler = InputHandler.new(@state)
         @command_handler = build_command_handler
       end
 
@@ -113,6 +116,36 @@ module RubyCoded
         @user_config&.set_config("model", model_name)
         @state.exit_model_select!
         @state.add_message(:system, "Model switched to #{model_name}.")
+      end
+
+      def create_bridge
+        openai_creds = @credentials_store.retrieve(:openai)
+        if openai_creds && openai_creds["auth_method"] == "oauth"
+          @state.codex_mode = true
+          ensure_valid_codex_model!
+          CodexBridge.new(@state,
+                          credentials_store: @credentials_store,
+                          auth_manager: @auth_manager)
+        else
+          @state.codex_mode = false
+          LLMBridge.new(@state)
+        end
+      end
+
+      def ensure_valid_codex_model!
+        return if CodexModels.codex_model?(@state.model)
+
+        @state.model = CodexBridge::DEFAULT_MODEL
+        @user_config&.set_config("model", CodexBridge::DEFAULT_MODEL)
+      end
+
+      def recreate_bridge!
+        agentic = @llm_bridge.agentic_mode
+        plan = @llm_bridge.plan_mode
+        @llm_bridge = create_bridge
+        @llm_bridge.toggle_agentic_mode!(agentic) if agentic
+        @llm_bridge.toggle_plan_mode!(plan) if plan
+        @command_handler = build_command_handler
       end
 
     end

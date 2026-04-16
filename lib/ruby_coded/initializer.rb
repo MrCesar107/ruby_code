@@ -12,7 +12,7 @@ module RubyCoded
   # Initializer class for the RubyCoded gem (think of it as a main class)
   class Initializer
     PROVIDER_DEFAULT_MODELS = {
-      openai: "gpt-5-codex",
+      openai: "gpt-5.4",
       anthropic: "claude-sonnet-4-6"
     }.freeze
 

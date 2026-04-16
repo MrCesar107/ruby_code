@@ -57,12 +57,13 @@ module RubyCoded
           tokens = exchange_oauth_code(provider, result[:code], @oauth_pkce[:verifier])
           @credentials_store.store(provider_name, build_oauth_credentials(tokens))
           @auth_manager&.configure_ruby_llm!
+          recreate_bridge!
           @state.exit_login_flow!
           @state.add_message(:system, "Logged in to #{provider.display_name} with OAuth.")
         end
 
         def build_oauth_url(provider, challenge, state)
-          params = URI.encode_www_form(
+          params = {
             client_id: provider.client_id,
             redirect_uri: provider.redirect_uri,
             response_type: "code",
@@ -70,8 +71,9 @@ module RubyCoded
             code_challenge: challenge,
             code_challenge_method: "S256",
             state: state
-          )
-          "#{provider.auth_url}?#{params}"
+          }
+          params.merge!(provider.codex_auth_params) if provider.respond_to?(:codex_auth_params)
+          "#{provider.auth_url}?#{URI.encode_www_form(params)}"
         end
 
         def exchange_oauth_code(provider, code, verifier)

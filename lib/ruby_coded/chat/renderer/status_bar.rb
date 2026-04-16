@@ -15,7 +15,8 @@ module RubyCoded
 
         def status_bar_text(width)
           left = status_bar_left
-          right = "#{@state.model} | #{format_cost(@state.total_session_cost)} "
+          model_label = @state.codex_mode ? "#{@state.model} (ChatGPT)" : "#{@state.model} (API)"
+          right = "#{model_label} | #{format_cost(@state.total_session_cost)} "
           center_pad = [width - left.length - right.length, 1].max
           "#{left}#{" " * center_pad}#{right}"
         end

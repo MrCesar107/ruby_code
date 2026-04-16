@@ -79,7 +79,7 @@ module RubyCoded
       end
 
       def build_auth_url(challenge, state)
-        params = URI.encode_www_form(
+        params = {
           client_id: @provider.client_id,
           redirect_uri: @provider.redirect_uri,
           response_type: "code",
@@ -87,8 +87,9 @@ module RubyCoded
           code_challenge: challenge,
           code_challenge_method: "S256",
           state: state
-        )
-        "#{@provider.auth_url}?#{params}"
+        }
+        params.merge!(@provider.codex_auth_params) if @provider.respond_to?(:codex_auth_params)
+        "#{@provider.auth_url}?#{URI.encode_www_form(params)}"
       end
 
       def exchange_code(code, verifier)
