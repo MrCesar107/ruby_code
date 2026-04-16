@@ -22,16 +22,18 @@ An AI-powered terminal coding assistant built in Ruby. Chat with LLMs, let an ag
 - **Chat mode** — Talk to an LLM directly in a full terminal UI (TUI) built with [ratatui](https://github.com/nicholasgasior/ratatui-ruby)
 - **Agent mode** — The model can read, write, edit, and delete files in your project, create directories, and run shell commands with user confirmation
 - **Plan mode** — Generate structured plans before implementing, with interactive clarification questions and auto-switch to agent mode when ready
+- **ChatGPT Plus/Pro support** — Use your ChatGPT subscription to access GPT-5.x models via the Codex backend — no API credits required
 - **Multi-provider support** — Works with OpenAI and Anthropic out of the box (OAuth and API key authentication)
+- **In-session login** — Authenticate or switch providers at any time with `/login`, no restart needed
 - **Tool confirmation** — Write and dangerous operations require explicit approval; safe operations (read, list) run automatically
-- **Token & cost tracking** — Live status bar showing token usage and estimated session cost
+- **Token & cost tracking** — Live status bar showing token usage, estimated session cost, and auth mode indicator
 - **Plugin system** — Extend the chat with custom state, input handlers, renderer overlays, and commands
-- **Slash commands** — `/agent`, `/plan`, `/model`, `/history`, `/tokens`, `/help`, and more
+- **Slash commands** — `/agent`, `/plan`, `/model`, `/login`, `/history`, `/tokens`, `/help`, and more
 
 ## Requirements
 
 - Ruby >= 3.3.0
-- An OpenAI or Anthropic account (API key or OAuth)
+- An OpenAI or Anthropic account (ChatGPT Plus/Pro subscription, or API key)
 
 ## Installation
 
@@ -59,6 +61,7 @@ On first launch you'll be asked to authenticate with a provider. After that, you
 | `/plan off` | Disable plan mode |
 | `/plan save` | Save the current plan to a file |
 | `/model` | Switch to a different model |
+| `/login` | Authenticate with a provider (OpenAI, Anthropic) |
 | `/tokens` | Show detailed token usage breakdown |
 | `/history` | Show conversation history |
 | `/clear` | Clear the conversation |
@@ -113,13 +116,15 @@ bundle exec exe/ruby_coded
 
 ## What's next
 
-- Find a way to update the autocomplete plugin when a new command is added []
-- Display context window size (depending on the model) []
-- UI element to indicate the AI is performing a task []
-- Add the possibility to create custom commands []
-- Skills implementation []
-- Implement Google Auth for Gemini []
-- Session recovery system by ID []
+- Find a way to update the autocomplete plugin when a new command is added
+- Display context window size (depending on the model)
+- UI element to indicate the AI is performing a task
+- Add the possibility to create custom commands
+- Skills implementation
+- Implement Google Auth for Gemini
+- Local LLM support
+- Session recovery system by ID
+- Context summarization when approaching the model's context limit
 
 ## Contributing
 
