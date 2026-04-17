@@ -55,10 +55,12 @@ Metrics/AbcSize:
   Exclude:
     - 'lib/ruby_coded/chat/state.rb'
 
-# Offense count: 1
+# Offense count: 3
 # Configuration parameters: CountComments, Max, CountAsOne.
 Metrics/ClassLength:
   Exclude:
+    - 'lib/ruby_coded/auth/auth_manager.rb'
+    - 'lib/ruby_coded/chat/app.rb'
     - 'lib/ruby_coded/chat/state.rb'
 
 # Offense count: 2

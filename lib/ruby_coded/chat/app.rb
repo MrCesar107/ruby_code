@@ -29,12 +29,18 @@ module RubyCoded
       include LoginHandler
       include OAuthHandler
 
-      def initialize(model:, user_config: nil, auth_manager: nil)
+      def initialize(model:, user_config: nil, auth_manager: nil, fallback_from_model: nil)
         @model = model
         @user_config = user_config
         @auth_manager = auth_manager
+        @fallback_from_model = fallback_from_model
         apply_plugin_extensions!
-        @state = State.new(model: model)
+        build_components!
+        announce_model_fallback
+      end
+
+      def build_components!
+        @state = State.new(model: @model)
         @credentials_store = Auth::CredentialsStore.new
         @llm_bridge = create_bridge
         @input_handler = InputHandler.new(@state)
@@ -92,6 +98,17 @@ module RubyCoded
       def build_command_handler
         CommandHandler.new(@state, llm_bridge: @llm_bridge, user_config: @user_config,
                                    credentials_store: @credentials_store, auth_manager: @auth_manager)
+      end
+
+      def announce_model_fallback
+        return unless @fallback_from_model && !@fallback_from_model.to_s.strip.empty?
+        return if @fallback_from_model == @model
+
+        @state.add_message(
+          :system,
+          "Model #{@fallback_from_model} is not available (provider not authenticated). " \
+          "Switched to #{@model}. Use /login to authenticate or /model to change."
+        )
       end
 
       def apply_selected_model

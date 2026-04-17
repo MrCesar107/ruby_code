@@ -319,6 +319,74 @@ class TestAuthManager < Minitest::Test
     assert_equal "sk-stable", configured_key
   end
 
+  def test_provider_for_model_detects_openai_gpt_models
+    assert_equal :openai, @manager.provider_for_model("gpt-5.4")
+    assert_equal :openai, @manager.provider_for_model("gpt-4o")
+    assert_equal :openai, @manager.provider_for_model("gpt-3.5-turbo")
+  end
+
+  def test_provider_for_model_detects_openai_reasoning_models
+    assert_equal :openai, @manager.provider_for_model("o1-preview")
+    assert_equal :openai, @manager.provider_for_model("o3-mini")
+    assert_equal :openai, @manager.provider_for_model("o4")
+  end
+
+  def test_provider_for_model_detects_anthropic_claude_models
+    assert_equal :anthropic, @manager.provider_for_model("claude-sonnet-4-6")
+    assert_equal :anthropic, @manager.provider_for_model("claude-3-5-sonnet")
+  end
+
+  def test_provider_for_model_is_case_insensitive
+    assert_equal :openai, @manager.provider_for_model("GPT-5.4")
+    assert_equal :anthropic, @manager.provider_for_model("Claude-Sonnet-4-6")
+  end
+
+  def test_provider_for_model_returns_nil_for_unknown
+    assert_nil @manager.provider_for_model("random-model")
+    assert_nil @manager.provider_for_model("")
+    assert_nil @manager.provider_for_model(nil)
+    assert_nil @manager.provider_for_model("   ")
+  end
+
+  def test_model_provider_authenticated_returns_true_when_provider_authenticated
+    store_credentials(:openai, { "auth_method" => "api_key", "key" => "sk-test" })
+    manager = RubyCoded::Auth::AuthManager.new(config_path: @config_path)
+
+    assert manager.model_provider_authenticated?("gpt-5.4")
+  end
+
+  def test_model_provider_authenticated_returns_false_when_provider_not_authenticated
+    store_credentials(:anthropic, { "auth_method" => "api_key", "key" => "sk-ant-api03-test" })
+    manager = RubyCoded::Auth::AuthManager.new(config_path: @config_path)
+
+    refute manager.model_provider_authenticated?("gpt-5.4")
+  end
+
+  def test_model_provider_authenticated_returns_false_when_no_credentials
+    refute @manager.model_provider_authenticated?("gpt-5.4")
+    refute @manager.model_provider_authenticated?("claude-sonnet-4-6")
+  end
+
+  def test_model_provider_authenticated_returns_false_for_unknown_model
+    store_credentials(:openai, { "auth_method" => "api_key", "key" => "sk-test" })
+    manager = RubyCoded::Auth::AuthManager.new(config_path: @config_path)
+
+    refute manager.model_provider_authenticated?("unknown-model")
+    refute manager.model_provider_authenticated?(nil)
+  end
+
+  def test_model_provider_authenticated_true_with_openai_oauth_credentials
+    store_credentials(:openai, {
+                        "auth_method" => "oauth",
+                        "access_token" => "eyJoauth",
+                        "refresh_token" => "rt-test",
+                        "expires_at" => (Time.now + 3600).iso8601
+                      })
+    manager = RubyCoded::Auth::AuthManager.new(config_path: @config_path)
+
+    assert manager.model_provider_authenticated?("gpt-5.4")
+  end
+
   def test_choose_auth_method_skips_prompt_for_single_method_provider
     strategy_mock = Minitest::Mock.new
     strategy_mock.expect(:authenticate, { "auth_method" => "api_key", "key" => "sk-ant-api03-auto" })

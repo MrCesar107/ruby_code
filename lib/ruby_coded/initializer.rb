@@ -20,6 +20,7 @@ module RubyCoded
       @user_cfg = UserConfig.new
       @prompt = TTY::Prompt.new
       @auth_manager = Auth::AuthManager.new
+      @fallback_from_model = nil
 
       ask_for_directory_permission unless @user_cfg.directory_trusted?
       @auth_manager.check_authentication
@@ -38,12 +39,22 @@ module RubyCoded
     end
 
     def start_chat
-      Chat::App.new(model: resolved_chat_model, user_config: @user_cfg, auth_manager: @auth_manager).run
+      model = resolved_chat_model
+      Chat::App.new(
+        model: model,
+        user_config: @user_cfg,
+        auth_manager: @auth_manager,
+        fallback_from_model: @fallback_from_model
+      ).run
     end
 
     def resolved_chat_model
       stored = @user_cfg.get_config("model")
-      return stored.to_s if stored && !stored.to_s.strip.empty?
+      if stored && !stored.to_s.strip.empty?
+        return stored.to_s if @auth_manager.model_provider_authenticated?(stored.to_s)
+
+        @fallback_from_model = stored.to_s
+      end
 
       provider = @auth_manager.authenticated_provider_names.first
       PROVIDER_DEFAULT_MODELS.fetch(provider, RubyLLM.config.default_model).to_s

@@ -127,7 +127,72 @@ class TestInitializer < Minitest::Test
     assert configure_called
   end
 
+  def test_uses_stored_model_when_provider_authenticated
+    write_config(trusted_directories: [File.expand_path(@tmpdir)], model: "gpt-5.4", with_provider: true)
+
+    captured_args = capture_app_args(authenticated: [:openai], model_authenticated: true)
+
+    assert_equal "gpt-5.4", captured_args[:model]
+    assert_nil captured_args[:fallback_from_model]
+  end
+
+  def test_falls_back_when_stored_model_provider_not_authenticated
+    write_config(trusted_directories: [File.expand_path(@tmpdir)], model: "gpt-5.4", with_provider: true)
+
+    captured_args = capture_app_args(authenticated: [:anthropic], model_authenticated: false)
+
+    assert_equal "claude-sonnet-4-6", captured_args[:model]
+    assert_equal "gpt-5.4", captured_args[:fallback_from_model]
+  end
+
+  def test_uses_provider_default_when_no_stored_model
+    write_config(trusted_directories: [File.expand_path(@tmpdir)], model: nil, with_provider: true)
+
+    captured_args = capture_app_args(authenticated: [:openai], model_authenticated: false)
+
+    assert_equal "gpt-5.4", captured_args[:model]
+    assert_nil captured_args[:fallback_from_model]
+  end
+
+  def test_uses_provider_default_when_stored_model_is_blank
+    write_config(trusted_directories: [File.expand_path(@tmpdir)], model: "   ", with_provider: true)
+
+    captured_args = capture_app_args(authenticated: [:anthropic], model_authenticated: false)
+
+    assert_equal "claude-sonnet-4-6", captured_args[:model]
+    assert_nil captured_args[:fallback_from_model]
+  end
+
   private
+
+  def capture_app_args(authenticated:, model_authenticated:)
+    captured = {}
+    auth_mock = Object.new
+    auth_mock.define_singleton_method(:check_authentication) { nil }
+    auth_mock.define_singleton_method(:configure_ruby_llm!) { nil }
+    auth_mock.define_singleton_method(:authenticated_provider_names) { authenticated }
+    auth_mock.define_singleton_method(:model_provider_authenticated?) { |_model| model_authenticated }
+
+    app_stub = lambda do |**kwargs|
+      captured.merge!(kwargs)
+      app = Object.new
+      app.define_singleton_method(:run) { nil }
+      app
+    end
+
+    mock_prompt = build_prompt_stub
+    TTY::Prompt.stub(:new, mock_prompt) do
+      RubyCoded::Auth::AuthManager.stub(:new, auth_mock) do
+        stub_user_config do
+          RubyCoded::Chat::App.stub(:new, app_stub) do
+            capture_io { RubyCoded::Initializer.new }
+          end
+        end
+      end
+    end
+
+    captured
+  end
 
   def write_config(trusted_directories: [], model: nil, with_provider: false)
     config = {

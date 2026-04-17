@@ -48,6 +48,23 @@ module RubyCoded
         PROVIDERS.keys.select { |name| credential_store.retrieve(name) }
       end
 
+      def provider_for_model(model_name)
+        return nil if model_name.nil? || model_name.to_s.strip.empty?
+
+        normalized = model_name.to_s.downcase
+        return :openai if normalized.match?(/\A(gpt|o\d)/)
+        return :anthropic if normalized.start_with?("claude")
+
+        nil
+      end
+
+      def model_provider_authenticated?(model_name)
+        provider = provider_for_model(model_name)
+        return false unless provider
+
+        authenticated_provider_names.include?(provider)
+      end
+
       def check_authentication
         return if configured_providers.any? { |name| credential_store.retrieve(name) }
 
