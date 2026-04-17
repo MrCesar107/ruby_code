@@ -19,7 +19,7 @@ module RubyCoded
     def initialize
       @user_cfg = UserConfig.new
       @prompt = TTY::Prompt.new
-      @auth_manager = Auth::AuthManager.new
+      @auth_manager = Auth::AuthManager.new(user_config: @user_cfg)
       @fallback_from_model = nil
 
       ask_for_directory_permission unless @user_cfg.directory_trusted?

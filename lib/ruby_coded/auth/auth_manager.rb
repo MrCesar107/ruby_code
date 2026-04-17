@@ -21,8 +21,9 @@ module RubyCoded
         anthropic: Providers::Anthropic
       }.freeze
 
-      def initialize(config_path: UserConfig::CONFIG_PATH)
+      def initialize(config_path: UserConfig::CONFIG_PATH, user_config: nil)
         @config_path = config_path
+        @user_config = user_config
       end
 
       def login(provider_name)
@@ -113,7 +114,7 @@ module RubyCoded
       end
 
       def credential_store
-        @credential_store ||= CredentialsStore.new(config_path: @config_path)
+        @credential_store ||= CredentialsStore.new(config_path: @config_path, user_config: @user_config)
       end
 
       def extract_api_key(credentials)

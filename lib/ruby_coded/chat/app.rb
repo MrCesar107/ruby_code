@@ -41,7 +41,7 @@ module RubyCoded
 
       def build_components!
         @state = State.new(model: @model)
-        @credentials_store = Auth::CredentialsStore.new
+        @credentials_store = Auth::CredentialsStore.new(user_config: @user_config)
         @llm_bridge = create_bridge
         @input_handler = InputHandler.new(@state)
         @command_handler = build_command_handler

@@ -115,4 +115,39 @@ class TestCredentialsStore < Minitest::Test
     assert raw["providers"].key?("openai")
     assert_equal "sk-test", @store.retrieve(:openai)["key"]
   end
+
+  def test_accepts_shared_user_config_instance
+    require "ruby_coded/config/user_config"
+    user_config = RubyCoded::UserConfig.new(config_path: @config_path)
+    store = RubyCoded::Auth::CredentialsStore.new(config_path: @config_path, user_config: user_config)
+
+    store.store(:openai, { "auth_method" => "oauth", "access_token" => "tok" })
+
+    assert_equal "tok", user_config.full_config.dig("providers", "openai", "access_token")
+  end
+
+  def test_shared_user_config_set_config_preserves_credentials_stored_after_load
+    require "ruby_coded/config/user_config"
+    user_config = RubyCoded::UserConfig.new(config_path: @config_path)
+    store = RubyCoded::Auth::CredentialsStore.new(config_path: @config_path, user_config: user_config)
+
+    store.store(:openai, { "auth_method" => "oauth", "access_token" => "tok" })
+    user_config.set_config("model", "gpt-5.4")
+
+    raw = YAML.load_file(@config_path, permitted_classes: [Symbol])
+    assert_equal "gpt-5.4", raw["user_config"]["model"]
+    assert_equal "tok", raw.dig("providers", "openai", "access_token")
+  end
+
+  def test_separate_user_config_reproduces_overwrite_regression
+    require "ruby_coded/config/user_config"
+    stale_user_config = RubyCoded::UserConfig.new(config_path: @config_path)
+    @store.store(:openai, { "auth_method" => "oauth", "access_token" => "tok" })
+
+    stale_user_config.set_config("model", "gpt-5.4")
+
+    raw = YAML.load_file(@config_path, permitted_classes: [Symbol])
+    assert_nil raw.dig("providers", "openai"),
+               "Without sharing UserConfig, set_config must overwrite providers (documents the bug)"
+  end
 end

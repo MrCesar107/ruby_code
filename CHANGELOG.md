@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Fixed
+
+- **OAuth credentials lost after in-TUI login**: When logging in to OpenAI via OAuth from within the chat (`/login`) while already authenticated with another provider (e.g. Anthropic) and using a non-Codex model, the freshly stored OAuth credentials were wiped from `~/.ruby_coded/config.yaml`. The root cause was two `UserConfig` instances holding independent in-memory copies of the config; when `ensure_valid_codex_model!` called `@user_config.set_config("model", "gpt-5.4")`, the stale hash (loaded before the OAuth login) was serialized back to disk, overwriting the OAuth credentials written moments earlier by `CredentialsStore`. Fixed by threading a single shared `UserConfig` through `Initializer`, `AuthManager`, `CredentialsStore` and `Chat::App`.
+
 ## [0.2.1] - 2026-04-17
 
 ### Fixed
@@ -29,10 +33,10 @@
 - AuthManager skips OpenAI OAuth credentials for RubyLLM configuration (handled by CodexBridge)
 - Default OpenAI model updated to `gpt-5.4`
 
-## [0.1.0] - 2026-04-15
-
-- Initial release
-
 ## [0.1.1] - 2026-04-15
 
 - Fix CI workflow
+
+## [0.1.0] - 2026-04-15
+
+- Initial release
