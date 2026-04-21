@@ -5,6 +5,7 @@ require "ruby_coded/plugins"
 require "ruby_coded/chat/command_handler"
 require "ruby_coded/chat/state"
 require "ruby_coded/auth/auth_manager"
+require "ruby_coded/commands/catalog"
 
 class TestLoginCommands < Minitest::Test
   def setup
@@ -12,11 +13,13 @@ class TestLoginCommands < Minitest::Test
     @tmpdir = Dir.mktmpdir
     Dir.chdir(@tmpdir)
 
-    @state = RubyCoded::Chat::State.new(model: "test-model")
+    @command_catalog = RubyCoded::Commands::Catalog.new(project_root: @tmpdir, plugin_registry: RubyCoded.plugin_registry)
+    @state = RubyCoded::Chat::State.new(model: "test-model", command_catalog: @command_catalog)
     @llm_bridge = MockLoginBridge.new
     @handler = RubyCoded::Chat::CommandHandler.new(
       @state,
-      llm_bridge: @llm_bridge
+      llm_bridge: @llm_bridge,
+      command_catalog: @command_catalog
     )
   end
 

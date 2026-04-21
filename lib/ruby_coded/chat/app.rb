@@ -13,6 +13,7 @@ require_relative "command_handler"
 require_relative "llm_bridge"
 require_relative "codex_bridge"
 require_relative "codex_models"
+require_relative "../commands/catalog"
 require_relative "../auth/credentials_store"
 require_relative "../auth/jwt_decoder"
 require_relative "../auth/pkce"
@@ -40,7 +41,12 @@ module RubyCoded
       end
 
       def build_components!
-        @state = State.new(model: @model)
+        @command_catalog = RubyCoded::Commands::Catalog.new(
+          project_root: Dir.pwd,
+          plugin_registry: RubyCoded.plugin_registry
+        )
+
+        @state = State.new(model: @model, command_catalog: @command_catalog)
         @credentials_store = Auth::CredentialsStore.new(user_config: @user_config)
         @llm_bridge = create_bridge
         @input_handler = InputHandler.new(@state)
@@ -96,8 +102,14 @@ module RubyCoded
       end
 
       def build_command_handler
-        CommandHandler.new(@state, llm_bridge: @llm_bridge, user_config: @user_config,
-                                   credentials_store: @credentials_store, auth_manager: @auth_manager)
+        CommandHandler.new(
+          @state,
+          llm_bridge: @llm_bridge,
+          user_config: @user_config,
+          credentials_store: @credentials_store,
+          auth_manager: @auth_manager,
+          command_catalog: @command_catalog
+        )
       end
 
       def announce_model_fallback
@@ -150,6 +162,7 @@ module RubyCoded
       end
 
       def recreate_bridge!
+        @command_catalog.reload!
         agentic = @llm_bridge.agentic_mode
         plan = @llm_bridge.plan_mode
         @llm_bridge = create_bridge
@@ -157,7 +170,6 @@ module RubyCoded
         @llm_bridge.toggle_plan_mode!(plan) if plan
         @command_handler = build_command_handler
       end
-
     end
   end
 end

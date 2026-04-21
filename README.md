@@ -28,7 +28,7 @@ An AI-powered terminal coding assistant built in Ruby. Chat with LLMs, let an ag
 - **Tool confirmation** — Write and dangerous operations require explicit approval; safe operations (read, list) run automatically
 - **Token & cost tracking** — Live status bar showing token usage, estimated session cost, and auth mode indicator
 - **Plugin system** — Extend the chat with custom state, input handlers, renderer overlays, and commands
-- **Slash commands** — `/agent`, `/plan`, `/model`, `/login`, `/history`, `/tokens`, `/help`, and more
+- **Slash commands** — `/agent`, `/plan`, `/model`, `/login`, `/history`, `/tokens`, `/commands reload`, `/commands list`, `/help`, and more
 
 ## Requirements
 
@@ -62,6 +62,8 @@ On first launch you'll be asked to authenticate with a provider. After that, you
 | `/plan save` | Save the current plan to a file |
 | `/model` | Switch to a different model |
 | `/login` | Authenticate with a provider (OpenAI, Anthropic) |
+| `/commands reload` | Reload custom markdown commands from the current project |
+| `/commands list` | List currently loaded custom markdown commands |
 | `/tokens` | Show detailed token usage breakdown |
 | `/history` | Show conversation history |
 | `/clear` | Clear the conversation |
@@ -86,6 +88,86 @@ Safe tools run without asking. Confirm and dangerous tools show the operation de
 ### Plan mode
 
 Plan mode restricts the model to read-only tools and a planning-oriented system prompt. The model will analyze your project and propose a structured plan. If the model needs clarification, it presents interactive options you can select or answer with custom text.
+
+### Custom commands
+
+You can define your own project-specific slash commands using Markdown files inside:
+
+```bash
+.ruby_coded/commands/
+```
+
+Each `.md` file represents one custom command. RubyCoded loads these commands into:
+
+- the slash-command autocomplete list
+- `/help`
+- command execution
+
+#### File format
+
+Use YAML frontmatter followed by the command body:
+
+```md
+---
+command: /review-auth
+description: Review auth implementation
+usage: /review-auth [file]
+---
+
+Review the authentication implementation and suggest improvements.
+Focus on risks, bugs, and refactoring opportunities.
+```
+
+#### Required fields
+
+- `command` — command name, must start with `/`
+- `description` — short description shown in autocomplete and help
+
+#### Optional fields
+
+- `usage` — custom usage text shown in `/help`
+
+#### How it works
+
+The Markdown body is used as the prompt template for the command. For example:
+
+```bash
+/review-auth lib/ruby_coded/chat/command_handler.rb
+```
+
+RubyCoded will send the command body to the model and append the extra user input as additional context.
+
+#### Managing commands
+
+Custom commands are loaded from the current project. After adding, editing, or deleting command files, you can manage them without restarting the app.
+
+Reload command definitions:
+
+```bash
+/commands reload
+```
+
+The reload command reports:
+
+- how many custom commands were added
+- how many were removed
+- how many are currently available
+- how many invalid files were ignored
+- how many conflicting commands were ignored
+- invalid file names
+- conflicting command names
+
+List currently loaded custom commands:
+
+```bash
+/commands list
+```
+
+#### Notes
+
+- Core commands take precedence over custom commands.
+- Plugin commands also take precedence over custom Markdown commands.
+- Invalid Markdown command files are ignored during reload.
 
 ## Keyboard shortcuts
 
@@ -116,10 +198,9 @@ bundle exec exe/ruby_coded
 
 ## What's next
 
-- Find a way to update the autocomplete plugin when a new command is added
 - Display context window size (depending on the model)
 - UI element to indicate the AI is performing a task
-- Add the possibility to create custom commands
+- Improve custom commands further (validation, conflict reporting, management UX)
 - Skills implementation
 - Implement Google Auth for Gemini
 - Local LLM support

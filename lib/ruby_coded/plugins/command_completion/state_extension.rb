@@ -5,19 +5,6 @@ module RubyCoded
     module CommandCompletion
       # Mixed into Chat::State to add command-completion tracking.
       module StateExtension
-        COMMAND_INFO = {
-          "/help" => "Show help message",
-          "/model" => "Select or switch model",
-          "/clear" => "Clear conversation history",
-          "/history" => "Show conversation summary",
-          "/tokens" => "Show detailed token usage and cost",
-          "/agent" => "Toggle agent mode (on/off)",
-          "/plan" => "Toggle plan mode (on/off/save)",
-          "/login" => "Authenticate with an AI provider",
-          "/exit" => "Exit the chat",
-          "/quit" => "Exit the chat"
-        }.freeze
-
         def self.included(base)
           base.attr_reader :command_completion_index
         end
@@ -36,8 +23,8 @@ module RubyCoded
         def command_suggestions
           prefix = @input_buffer.downcase
           all_descriptions = merged_command_descriptions
-          all_descriptions.select { |cmd, _| cmd.start_with?(prefix) }
-                          .sort_by { |cmd, _| cmd }
+          all_descriptions.select { |cmd, _| cmd.downcase.start_with?(prefix) }
+                          .sort_by { |cmd, _| cmd.downcase }
         end
 
         def current_command_suggestion
@@ -81,9 +68,9 @@ module RubyCoded
         private
 
         def merged_command_descriptions
-          base = COMMAND_INFO.dup
-          base.merge!(RubyCoded.plugin_registry.all_command_descriptions) if RubyCoded.respond_to?(:plugin_registry)
-          base
+          return {} unless respond_to?(:command_catalog) && command_catalog
+
+          command_catalog.command_descriptions
         end
       end
     end

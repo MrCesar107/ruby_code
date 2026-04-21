@@ -3,6 +3,7 @@
 require "test_helper"
 require "ruby_coded/plugins"
 require "ruby_coded/chat/state"
+require "ruby_coded/commands/catalog"
 
 class TestCommandCompletion < Minitest::Test
   def setup
@@ -16,7 +17,8 @@ class TestCommandCompletion < Minitest::Test
       renderer_class: Class.new,
       command_handler_class: Class.new
     )
-    @state = state_class.new(model: "test-model")
+    @catalog = RubyCoded::Commands::Catalog.new(project_root: Dir.pwd, plugin_registry: @registry)
+    @state = state_class.new(model: "test-model", command_catalog: @catalog)
   end
 
   # --- Activation ---
@@ -63,6 +65,7 @@ class TestCommandCompletion < Minitest::Test
     assert_includes commands, "/history"
     assert_includes commands, "/tokens"
     assert_includes commands, "/quit"
+    assert_includes commands, "/commands"
   end
 
   def test_suggestions_filtered_by_prefix

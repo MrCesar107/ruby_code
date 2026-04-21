@@ -9,12 +9,13 @@ require_relative "command_handler/token_commands"
 require_relative "command_handler/agent_commands"
 require_relative "command_handler/plan_commands"
 require_relative "command_handler/login_commands"
+require_relative "command_handler/custom_commands"
 
 module RubyCoded
   module Chat
     # Handles slash commands entered in the chat input.
-    # Base commands are always available; plugins can contribute
-    # additional commands via the plugin registry.
+    # Commands are resolved from a unified command catalog, which may
+    # include core commands, plugin commands, and markdown commands.
     class CommandHandler
       include ModelCommands
       include HistoryCommands
@@ -23,28 +24,17 @@ module RubyCoded
       include AgentCommands
       include PlanCommands
       include LoginCommands
-
-      BASE_COMMANDS = {
-        "/help" => :cmd_help,
-        "/exit" => :cmd_exit,
-        "/quit" => :cmd_exit,
-        "/clear" => :cmd_clear,
-        "/model" => :cmd_model,
-        "/history" => :cmd_history,
-        "/tokens" => :cmd_tokens,
-        "/agent" => :cmd_agent,
-        "/plan" => :cmd_plan,
-        "/login" => :cmd_login
-      }.freeze
+      include CustomCommands
 
       HELP_TEXT = File.read(File.join(__dir__, "help.txt")).freeze
 
-      def initialize(state, llm_bridge:, user_config: nil, credentials_store: nil, auth_manager: nil)
+      def initialize(state, llm_bridge:, command_catalog: nil, **deps)
         @state = state
         @llm_bridge = llm_bridge
-        @user_config = user_config
-        @credentials_store = credentials_store
-        @auth_manager = auth_manager
+        @user_config = deps[:user_config]
+        @credentials_store = deps[:credentials_store]
+        @auth_manager = deps[:auth_manager]
+        @command_catalog = command_catalog
         @commands = build_command_map
       end
 
@@ -53,31 +43,49 @@ module RubyCoded
         return if stripped.empty?
 
         command, rest = stripped.split(" ", 2)
-        method_name = @commands[command.downcase]
-
-        if method_name
-          send(method_name, rest)
-        else
-          @state.add_message(:system, "Unknown command: #{command}. Type /help for available commands.")
-        end
+        dispatch_command(command, rest)
       end
 
       private
 
+      def dispatch_command(command, rest)
+        normalized = command.downcase
+        method_name = @commands[normalized]
+        return send(method_name, rest) if method_name
+
+        dispatch_dynamic_command(command, normalized, rest)
+      end
+
+      def dispatch_dynamic_command(command, normalized, rest)
+        definition = @command_catalog&.find(normalized)
+        return handle_markdown_command(definition, rest) if definition&.markdown?
+
+        @state.add_message(:system, "Unknown command: #{command}. Type /help for available commands.")
+      end
+
       def build_command_map
-        cmds = BASE_COMMANDS.dup
-        cmds.merge!(RubyCoded.plugin_registry.all_commands)
-        cmds
+        return {} unless @command_catalog
+
+        @command_catalog.command_map
       end
 
       def cmd_help(_rest)
-        text = HELP_TEXT.dup
-        plugin_descs = RubyCoded.plugin_registry.all_command_descriptions
-        unless plugin_descs.empty?
-          text += "\nPlugin commands:\n"
-          plugin_descs.each { |cmd, desc| text += "  #{cmd.ljust(18)} #{desc}\n" }
-        end
-        @state.add_message(:system, text)
+        lines = ["Available commands:"]
+        lines.concat(command_help_lines)
+        append_static_help(lines)
+        @state.add_message(:system, lines.join("\n"))
+      end
+
+      def command_help_lines
+        @command_catalog.all_definitions.map { |definition| formatted_command_line(definition) }
+      end
+
+      def append_static_help(lines)
+        static_help = HELP_TEXT.strip
+        return if static_help.empty?
+
+        lines << ""
+        lines << static_help
       end
 
       def cmd_exit(_rest)
@@ -87,6 +95,26 @@ module RubyCoded
       def cmd_clear(_rest)
         @state.clear_messages!
         @state.add_message(:system, "Conversation cleared.")
+      end
+
+      def handle_markdown_command(definition, rest)
+        prompt = build_markdown_prompt(definition, rest)
+
+        @state.add_message(:system, "Running custom command #{definition.name}...")
+        @state.add_message(:user, prompt)
+        @llm_bridge.send_async(prompt)
+      end
+
+      def build_markdown_prompt(definition, rest)
+        extra = rest.to_s.strip
+        return definition.content if extra.empty?
+
+        <<~PROMPT
+          #{definition.content}
+
+          Additional user input:
+          #{extra}
+        PROMPT
       end
     end
   end

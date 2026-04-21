@@ -26,13 +26,14 @@ module RubyCoded
 
       attr_reader :input_buffer, :cursor_position, :input_scroll_offset, :messages, :scroll_offset,
                   :mode, :model_list, :model_select_index, :model_select_filter,
-                  :streaming, :mutex, :tui_suspend_reason
+                  :streaming, :mutex, :tui_suspend_reason, :command_catalog
       attr_accessor :model, :should_quit, :codex_mode
 
       MIN_RENDER_INTERVAL = 0.05
 
-      def initialize(model:)
+      def initialize(model:, command_catalog: nil)
         @model = model
+        @command_catalog = command_catalog
         # String.new: literals like "" are frozen under frozen_string_literal
         @input_buffer = String.new
         @cursor_position = 0
@@ -81,6 +82,12 @@ module RubyCoded
 
       def should_quit?
         @should_quit
+      end
+
+      def command_descriptions
+        return {} unless @command_catalog
+
+        @command_catalog.command_descriptions
       end
 
       def dirty?

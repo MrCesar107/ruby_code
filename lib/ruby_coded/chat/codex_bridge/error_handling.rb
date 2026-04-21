@@ -4,6 +4,7 @@ module RubyCoded
   module Chat
     class CodexBridge
       # Retry logic and error message formatting for the Codex API client.
+      # rubocop:disable Metrics/ModuleLength
       module ErrorHandling
         AGENT_SWITCH_PATTERN = /
           \b(implement|go[ ]ahead|proceed|execut|ejecutar?|comenz|
@@ -45,22 +46,34 @@ module RubyCoded
                              "Plan mode disabled — switching to agent mode to implement the plan.")
         end
 
-        def attempt_with_retries(input, retries = 0, fallback_attempted = false)
+        def attempt_with_retries(input, retries = 0, fallback_attempted: false)
           perform_codex_request(input)
         rescue Tools::AgentCancelledError, Tools::AgentIterationLimitError, Tools::ToolRejectedError => e
           @state.add_message(:system, e.message)
         rescue CodexAPIError => e
-          if should_fallback_to_default_model?(e, fallback_attempted)
-            switch_to_default_model!(e)
-            fallback_attempted = true
-            retry
-          end
-          @state.fail_last_assistant(e, friendly_message: codex_error_message(e))
+          handle_codex_api_error(e, input, retries, fallback_attempted)
         rescue Faraday::TooManyRequestsError => e
-          retry if (retries = handle_rate_limit_retry(e, retries))
-          @state.fail_last_assistant(e, friendly_message: rate_limit_message(e))
+          handle_rate_limit_error(e, retries, input, fallback_attempted)
         rescue StandardError => e
           @state.fail_last_assistant(e, friendly_message: "Codex API error: #{e.message}")
+        end
+
+        def handle_codex_api_error(error, input, retries, fallback_attempted)
+          return fail_codex_request(error) unless should_fallback_to_default_model?(error, fallback_attempted)
+
+          switch_to_default_model!(error)
+          attempt_with_retries(input, retries, fallback_attempted: true)
+        end
+
+        def fail_codex_request(error)
+          @state.fail_last_assistant(error, friendly_message: codex_error_message(error))
+        end
+
+        def handle_rate_limit_error(error, retries, input, fallback_attempted)
+          next_retries = handle_rate_limit_retry(error, retries)
+          return attempt_with_retries(input, next_retries, fallback_attempted: fallback_attempted) if next_retries
+
+          @state.fail_last_assistant(error, friendly_message: rate_limit_message(error))
         end
 
         def should_fallback_to_default_model?(error, already_attempted)
@@ -96,23 +109,33 @@ module RubyCoded
         end
 
         def codex_error_message(error)
+          return unsupported_model_message(error) if unsupported_model_error?(error)
+
+          status_message(error) || "Codex API error: #{error.message}"
+        end
+
+        def unsupported_model_error?(error)
+          error.status == 400 && error.message.match?(UNSUPPORTED_MODEL_PATTERN)
+        end
+
+        def unsupported_model_message(error)
+          "The selected model requires ChatGPT Pro. " \
+            "Use /model to pick one without the 'Pro only' tag. (#{error.message})"
+        end
+
+        def status_message(error)
           case error.status
-          when 400
-            if error.message.match?(UNSUPPORTED_MODEL_PATTERN)
-              "The selected model requires ChatGPT Pro. " \
-              "Use /model to pick one without the 'Pro only' tag. (#{error.message})"
-            else
-              "Codex API error: #{error.message}"
-            end
-          when 401
-            "Authentication failed. Your OAuth session may have expired. " \
-            "Try /login to re-authenticate. (#{error.message})"
-          when 403
-            "Access denied. Your ChatGPT subscription may not include Codex access. (#{error.message})"
+          when 400 then "Codex API error: #{error.message}"
+          when 401 then authentication_error_message(error)
+          when 403 then "Access denied. Your ChatGPT subscription may not include Codex access. (#{error.message})"
           when 404 then "Codex endpoint not found. The API may have changed. (#{error.message})"
           when 429 then rate_limit_message(error)
-          else "Codex API error: #{error.message}"
           end
+        end
+
+        def authentication_error_message(error)
+          "Authentication failed. Your OAuth session may have expired. " \
+            "Try /login to re-authenticate. (#{error.message})"
         end
 
         def rate_limit_message(error)
@@ -122,6 +145,7 @@ module RubyCoded
           MSG
         end
       end
+      # rubocop:enable Metrics/ModuleLength
     end
   end
 end

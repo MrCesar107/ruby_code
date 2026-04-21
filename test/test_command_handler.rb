@@ -1,17 +1,20 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "ruby_coded/plugins"
 require "ruby_coded/chat/command_handler"
 require "ruby_coded/chat/state"
 require "ruby_coded/auth/credentials_store"
 require "ruby_coded/auth/auth_manager"
+require "ruby_coded/commands/catalog"
 
 class TestCommandHandler < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
     @config_path = File.join(@tmpdir, "config.yaml")
 
-    @state = RubyCoded::Chat::State.new(model: "gpt-4o")
+    @command_catalog = RubyCoded::Commands::Catalog.new(project_root: @tmpdir, plugin_registry: RubyCoded.plugin_registry)
+    @state = RubyCoded::Chat::State.new(model: "gpt-4o", command_catalog: @command_catalog)
     @llm_bridge = MockLLMBridge.new
     @credentials_store = RubyCoded::Auth::CredentialsStore.new(config_path: @config_path)
     @user_config = RubyCoded::UserConfig.new(config_path: @config_path)
@@ -19,7 +22,8 @@ class TestCommandHandler < Minitest::Test
       @state,
       llm_bridge: @llm_bridge,
       user_config: @user_config,
-      credentials_store: @credentials_store
+      credentials_store: @credentials_store,
+      command_catalog: @command_catalog
     )
   end
 
@@ -117,6 +121,156 @@ class TestCommandHandler < Minitest::Test
     @handler.handle("/help")
     last_msg = @state.messages_snapshot.last
     assert_includes last_msg[:content], "Select a model from available providers"
+  end
+
+  def test_markdown_command_is_executed
+    commands_dir = File.join(@tmpdir, ".ruby_coded", "commands")
+    FileUtils.mkdir_p(commands_dir)
+    File.write(
+      File.join(commands_dir, "review_auth.md"),
+      <<~MD
+        ---
+        command: /review-auth
+        description: Review auth implementation
+        usage: /review-auth [file]
+        ---
+
+        Review the authentication implementation and suggest improvements.
+      MD
+    )
+
+    @command_catalog.reload!
+    @handler = build_handler
+    @handler.handle("/review-auth lib/auth.rb")
+
+    assert_includes @llm_bridge.last_async_input, "Review the authentication implementation"
+    assert_includes @llm_bridge.last_async_input, "Additional user input:"
+    assert_includes @llm_bridge.last_async_input, "lib/auth.rb"
+  end
+
+  def test_commands_reload_loads_new_markdown_command
+    commands_dir = File.join(@tmpdir, ".ruby_coded", "commands")
+    FileUtils.mkdir_p(commands_dir)
+    refute @command_catalog.find("/review-auth")
+
+    File.write(
+      File.join(commands_dir, "review_auth.md"),
+      <<~MD
+        ---
+        command: /review-auth
+        description: Review auth implementation
+        ---
+
+        Review the authentication implementation and suggest improvements.
+      MD
+    )
+
+    @handler.handle("/commands reload")
+
+    assert_equal "Commands reloaded. Added: 1, removed: 0, total custom commands: 1, invalid files ignored: 0, conflicts ignored: 0.",
+                 @state.messages_snapshot.last[:content]
+    assert @command_catalog.find("/review-auth")
+  end
+
+  def test_commands_reload_reports_invalid_and_removed_files
+    commands_dir = File.join(@tmpdir, ".ruby_coded", "commands")
+    FileUtils.mkdir_p(commands_dir)
+
+    File.write(
+      File.join(commands_dir, "review_auth.md"),
+      <<~MD
+        ---
+        command: /review-auth
+        description: Review auth implementation
+        ---
+
+        Review the authentication implementation and suggest improvements.
+      MD
+    )
+
+    @handler.handle("/commands reload")
+    File.delete(File.join(commands_dir, "review_auth.md"))
+    File.write(File.join(commands_dir, "invalid.md"), "# invalid")
+
+    @handler.handle("/commands reload")
+
+    assert_equal "Commands reloaded. Added: 0, removed: 1, total custom commands: 0, invalid files ignored: 1, conflicts ignored: 0.\nInvalid files: invalid.md",
+                 @state.messages_snapshot.last[:content]
+  end
+
+  def test_commands_reload_reports_conflicts
+    commands_dir = File.join(@tmpdir, ".ruby_coded", "commands")
+    FileUtils.mkdir_p(commands_dir)
+
+    File.write(
+      File.join(commands_dir, "help.md"),
+      <<~MD
+        ---
+        command: /help
+        description: Custom help
+        ---
+
+        This should conflict with the core help command.
+      MD
+    )
+
+    @handler.handle("/commands reload")
+
+    assert_equal "Commands reloaded. Added: 0, removed: 0, total custom commands: 0, invalid files ignored: 0, conflicts ignored: 1.\nConflicting commands: /help",
+                 @state.messages_snapshot.last[:content]
+  end
+
+  def test_commands_list_shows_empty_state
+    @handler.handle("/commands list")
+
+    assert_equal "No custom commands loaded. Add markdown files under .ruby_coded/commands and run /commands reload.",
+                 @state.messages_snapshot.last[:content]
+  end
+
+  def test_commands_list_shows_loaded_commands
+    commands_dir = File.join(@tmpdir, ".ruby_coded", "commands")
+    FileUtils.mkdir_p(commands_dir)
+
+    File.write(
+      File.join(commands_dir, "review_auth.md"),
+      <<~MD
+        ---
+        command: /review-auth
+        description: Review auth implementation
+        usage: /review-auth [file]
+        ---
+
+        Review the authentication implementation and suggest improvements.
+      MD
+    )
+
+    File.write(
+      File.join(commands_dir, "summarize.md"),
+      <<~MD
+        ---
+        command: /summarize
+        description: Summarize the current context
+        ---
+
+        Summarize the current context.
+      MD
+    )
+
+    @handler.handle("/commands reload")
+    @handler.handle("/commands list")
+
+    message = @state.messages_snapshot.last[:content]
+    assert_includes message, "Custom commands:"
+    assert_includes message, "/review-auth [file]"
+    assert_includes message, "Review auth implementation"
+    assert_includes message, "/summarize"
+    assert_includes message, "Summarize the current context"
+  end
+
+  def test_commands_without_subcommand_show_usage
+    @handler.handle("/commands")
+
+    assert_equal "Usage: /commands [reload|list]", @state.messages_snapshot.last[:content]
   end
 
   def test_state_model_select_navigation
@@ -279,7 +433,8 @@ class TestCommandHandler < Minitest::Test
     handler_without_store = RubyCoded::Chat::CommandHandler.new(
       @state,
       llm_bridge: @llm_bridge,
-      user_config: @user_config
+      user_config: @user_config,
+      command_catalog: @command_catalog
     )
 
     fake_models = [FakeModel.new("gpt-4o", "openai")]
@@ -301,7 +456,8 @@ class TestCommandHandler < Minitest::Test
       @state,
       llm_bridge: @llm_bridge,
       user_config: @user_config,
-      credentials_store: RubyCoded::Auth::CredentialsStore.new(config_path: @config_path)
+      credentials_store: RubyCoded::Auth::CredentialsStore.new(config_path: @config_path),
+      command_catalog: @command_catalog
     )
   end
 
@@ -319,10 +475,14 @@ class TestCommandHandler < Minitest::Test
   end
 
   class MockLLMBridge
-    attr_reader :last_reset_model
+    attr_reader :last_reset_model, :last_async_input
 
     def reset_chat!(model)
       @last_reset_model = model
+    end
+
+    def send_async(input)
+      @last_async_input = input
     end
   end
 
