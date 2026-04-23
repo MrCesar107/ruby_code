@@ -5,6 +5,7 @@ module RubyCoded
     class CodexBridge
       # Parses Server-Sent Events from the Codex streaming response and
       # dispatches content deltas, tool calls, and completion signals.
+      # rubocop:disable Metrics/ModuleLength
       module SSEParser
         StreamContext = Struct.new(
           :assistant_text, :pending_tool_calls, :buffer, :raw_body, :status, keyword_init: true
@@ -70,6 +71,7 @@ module RubyCoded
           when "response.function_call_arguments.delta" then handle_function_args_delta(event, pending_tool_calls)
           when "response.function_call_arguments.done" then handle_function_call_done(event, pending_tool_calls)
           when "response.output_item.added" then handle_output_item_added(event, pending_tool_calls)
+          when "response.completed" then handle_response_completed(event)
           end
         end
 
@@ -107,6 +109,23 @@ module RubyCoded
           tc[:arguments] = event["arguments"] || tc[:arguments] if tc
         end
 
+        # The Responses API emits a `response.completed` event at the end of the
+        # stream carrying the `usage` block. We mirror what `LLMBridge` does and
+        # feed those counters into `State` so that the status bar and the
+        # context-window indicator work for ChatGPT Plus/Pro users too.
+        def handle_response_completed(event)
+          usage = event.dig("response", "usage") || event["usage"]
+          return unless usage.is_a?(Hash)
+
+          @state.update_last_message_tokens(
+            model: @model,
+            input_tokens: usage["input_tokens"],
+            output_tokens: usage["output_tokens"],
+            thinking_tokens: usage.dig("output_tokens_details", "reasoning_tokens"),
+            cached_tokens: usage.dig("input_tokens_details", "cached_tokens")
+          )
+        end
+
         def finalize_response(assistant_text)
           @conversation_history << { role: "assistant", content: assistant_text } unless assistant_text.empty?
         end
@@ -131,6 +150,7 @@ module RubyCoded
           nil
         end
       end
+      # rubocop:enable Metrics/ModuleLength
     end
   end
 end

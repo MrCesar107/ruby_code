@@ -6,9 +6,10 @@ require_relative "../codex_models"
 module RubyCoded
   module Chat
     class State
-      # Resolves current model context window and computes session context usage.
-      # The usage metric is an approximation based on tokens accumulated during
-      # the current session, not the exact live prompt size of a single request.
+      # Resolves current model context window and computes live context usage
+      # based on the last turn's server-reported `usage` block. This reflects
+      # the size of the prompt actually sent to the model on the most recent
+      # request, not the total tokens spent in the session.
       module ContextWindow
         def current_model_context_window
           model_name = @model
@@ -21,7 +22,7 @@ module RubyCoded
         end
 
         def session_context_tokens_used
-          total_input_tokens + total_output_tokens + total_thinking_tokens
+          last_turn_context_tokens
         end
 
         def session_context_usage_percentage

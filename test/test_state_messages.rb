@@ -271,6 +271,49 @@ class TestStateMessages < Minitest::Test
     assert_equal 272_000, @state.current_model_context_window
   end
 
+  def test_session_context_tokens_used_reflects_last_turn_only
+    @state.add_message(:assistant, "Turn 1")
+    @state.update_last_message_tokens(input_tokens: 100, output_tokens: 50)
+    @state.add_message(:assistant, "Turn 2")
+    @state.update_last_message_tokens(input_tokens: 400, output_tokens: 80)
+
+    assert_equal 480, @state.session_context_tokens_used
+  end
+
+  def test_session_context_tokens_used_ignores_trailing_empty_message
+    @state.add_message(:assistant, "Turn 1")
+    @state.update_last_message_tokens(input_tokens: 1_000, output_tokens: 200, thinking_tokens: 50)
+    @state.add_message(:assistant, "")
+
+    assert_equal 1_250, @state.session_context_tokens_used
+  end
+
+  def test_session_context_usage_percentage_uses_last_turn
+    @state.model = "gpt-5.4"
+    @state.add_message(:assistant, "Turn 1")
+    @state.update_last_message_tokens(input_tokens: 27_200, output_tokens: 0)
+    @state.add_message(:assistant, "Turn 2")
+    @state.update_last_message_tokens(input_tokens: 54_400, output_tokens: 0)
+
+    assert_equal 20, @state.session_context_usage_percentage
+  end
+
+  def test_last_turn_context_tokens_is_zero_without_usage
+    @state.add_message(:assistant, "Turn 1")
+
+    assert_equal 0, @state.last_turn_context_tokens
+  end
+
+  def test_total_tokens_still_accumulate_across_turns
+    @state.add_message(:assistant, "Turn 1")
+    @state.update_last_message_tokens(input_tokens: 100, output_tokens: 50)
+    @state.add_message(:assistant, "Turn 2")
+    @state.update_last_message_tokens(input_tokens: 400, output_tokens: 80)
+
+    assert_equal 500, @state.total_input_tokens
+    assert_equal 130, @state.total_output_tokens
+  end
+
   # --- update_last_message_tokens with model: parameter ---
 
   def test_update_last_message_tokens_tracks_by_default_model

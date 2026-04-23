@@ -35,6 +35,22 @@ module RubyCoded
           end
         end
 
+        # Live size of the model's context window as reported by the last
+        # turn that carried usage info. Bridges (both API and Codex) are
+        # effectively stateless: every request re-sends the full history,
+        # so the server-reported `input_tokens` of the latest turn already
+        # represents the full live prompt. Summing across turns would
+        # double-count. We fall back to 0 when no turn has reported usage
+        # yet.
+        def last_turn_context_tokens
+          @mutex.synchronize do
+            last = @messages.reverse_each.find { |m| m[:input_tokens].to_i.positive? }
+            return 0 unless last
+
+            last[:input_tokens].to_i + last[:output_tokens].to_i + last[:thinking_tokens].to_i
+          end
+        end
+
         def token_usage_by_model
           @mutex.synchronize do
             @token_usage_by_model.transform_values(&:dup)
