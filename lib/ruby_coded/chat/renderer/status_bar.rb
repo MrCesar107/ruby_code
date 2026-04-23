@@ -30,7 +30,14 @@ module RubyCoded
           left = " ↑#{format_number(input_tok)} ↓#{format_number(output_tok)}"
           left << " 💭#{format_number(thinking_tok)}" if thinking_tok.positive?
           left << " (#{format_number(total_tok)} tokens)"
+          left << " | #{format_context_usage(@state.session_context_usage_percentage)}"
           left
+        end
+
+        def format_context_usage(percentage)
+          return "Ctx: N/A" if percentage.nil?
+
+          "Ctx: #{percentage}%"
         end
 
         def format_number(num)

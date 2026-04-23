@@ -24,6 +24,7 @@ class TestRendererStatusBar < Minitest::Test
     assert_includes widget[:text], "↑0"
     assert_includes widget[:text], "↓0"
     assert_includes widget[:text], "(0 tokens)"
+    assert_includes widget[:text], "Ctx: 0%"
   end
 
   def test_render_status_bar_shows_model_name
@@ -113,6 +114,34 @@ class TestRendererStatusBar < Minitest::Test
     assert_equal area, rendered_area
   end
 
+  def test_render_status_bar_shows_context_percentage_for_codex_model
+    @state.model = "gpt-5.4"
+    @state.add_message(:assistant, "Hello")
+    @state.update_last_message_tokens(input_tokens: 27_200, output_tokens: 0)
+
+    frame = MockFrame.new
+    area = MockArea.new(width: 120, height: 1)
+
+    @host.render_status_bar(frame, area)
+
+    widget, = frame.rendered.first
+    assert_includes widget[:text], "Ctx: 10%"
+  end
+
+  def test_render_status_bar_clamps_context_percentage_to_one_hundred
+    @state.model = "gpt-5.4"
+    @state.add_message(:assistant, "Hello")
+    @state.update_last_message_tokens(input_tokens: 300_000, output_tokens: 0)
+
+    frame = MockFrame.new
+    area = MockArea.new(width: 120, height: 1)
+
+    @host.render_status_bar(frame, area)
+
+    widget, = frame.rendered.first
+    assert_includes widget[:text], "Ctx: 100%"
+  end
+
   # --- format_number ---
 
   def test_format_number_zero
@@ -169,6 +198,16 @@ class TestRendererStatusBar < Minitest::Test
     assert_equal "Cost: $1.00", @host.format_cost(1.0)
   end
 
+  # --- format_context_usage ---
+
+  def test_format_context_usage_nil
+    assert_equal "Ctx: N/A", @host.format_context_usage(nil)
+  end
+
+  def test_format_context_usage_percent
+    assert_equal "Ctx: 42%", @host.format_context_usage(42)
+  end
+
   # --- Host and Mocks ---
 
   class StatusBarHost
@@ -179,7 +218,7 @@ class TestRendererStatusBar < Minitest::Test
       @state = state
     end
 
-    public :render_status_bar, :format_number, :format_cost
+    public :render_status_bar, :format_number, :format_cost, :format_context_usage
   end
 
   MockArea = Struct.new(:width, :height, :x, :y, keyword_init: true) do

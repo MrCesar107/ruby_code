@@ -153,6 +153,22 @@ class TestStateModelSelection < Minitest::Test
     assert_equal "claude", @state.selected_model.id
   end
 
+  def test_model_writer_marks_state_dirty_when_model_changes
+    @state.mark_clean!
+
+    @state.model = "gpt-5.4"
+
+    assert @state.dirty?
+  end
+
+  def test_model_writer_does_not_mark_dirty_when_model_is_unchanged
+    @state.mark_clean!
+
+    @state.model = "gpt-4o"
+
+    refute @state.dirty?
+  end
+
 
   FakeModel = Struct.new(:id, :provider)
 end

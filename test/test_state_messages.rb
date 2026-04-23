@@ -215,6 +215,62 @@ class TestStateMessages < Minitest::Test
     assert_equal 300, @state.total_thinking_tokens
   end
 
+  # --- context window usage ---
+
+  def test_session_context_tokens_used_sums_input_output_and_thinking
+    @state.add_message(:assistant, "Hello")
+    @state.update_last_message_tokens(input_tokens: 100, output_tokens: 50, thinking_tokens: 25)
+
+    assert_equal 175, @state.session_context_tokens_used
+  end
+
+  def test_session_context_usage_percentage_nil_when_context_window_unknown
+    @state.model = "unknown-model"
+
+    assert_nil @state.session_context_usage_percentage
+  end
+
+  def test_session_context_usage_percentage_for_codex_model
+    @state.model = "gpt-5.4"
+    @state.add_message(:assistant, "Hello")
+    @state.update_last_message_tokens(input_tokens: 27_200, output_tokens: 0)
+
+    assert_equal 10, @state.session_context_usage_percentage
+  end
+
+  def test_session_context_usage_percentage_includes_thinking_tokens
+    @state.model = "gpt-5.4"
+    @state.add_message(:assistant, "Hello")
+    @state.update_last_message_tokens(input_tokens: 10_000, output_tokens: 10_000, thinking_tokens: 7_200)
+
+    assert_equal 10, @state.session_context_usage_percentage
+  end
+
+  def test_session_context_usage_percentage_clamps_to_one_hundred
+    @state.model = "gpt-5.4"
+    @state.add_message(:assistant, "Hello")
+    @state.update_last_message_tokens(input_tokens: 400_000, output_tokens: 0)
+
+    assert_equal 100, @state.session_context_usage_percentage
+  end
+
+  def test_session_context_usage_percentage_resets_after_clear
+    @state.model = "gpt-5.4"
+    @state.add_message(:assistant, "Hello")
+    @state.update_last_message_tokens(input_tokens: 27_200, output_tokens: 0)
+    assert_equal 10, @state.session_context_usage_percentage
+
+    @state.clear_messages!
+
+    assert_equal 0, @state.session_context_usage_percentage
+  end
+
+  def test_current_model_context_window_for_codex_model
+    @state.model = "gpt-5.4"
+
+    assert_equal 272_000, @state.current_model_context_window
+  end
+
   # --- update_last_message_tokens with model: parameter ---
 
   def test_update_last_message_tokens_tracks_by_default_model

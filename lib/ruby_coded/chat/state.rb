@@ -8,6 +8,7 @@ require_relative "state/scrollable"
 require_relative "state/tool_confirmation"
 require_relative "state/plan_tracking"
 require_relative "state/token_cost"
+require_relative "state/context_window"
 require_relative "state/login_flow"
 
 module RubyCoded
@@ -22,12 +23,13 @@ module RubyCoded
       include ToolConfirmation
       include PlanTracking
       include TokenCost
+      include ContextWindow
       include LoginFlow
 
       attr_reader :input_buffer, :cursor_position, :input_scroll_offset, :messages, :scroll_offset,
                   :mode, :model_list, :model_select_index, :model_select_filter,
-                  :streaming, :mutex, :tui_suspend_reason, :command_catalog
-      attr_accessor :model, :should_quit, :codex_mode
+                  :streaming, :mutex, :tui_suspend_reason, :command_catalog, :model
+      attr_accessor :should_quit, :codex_mode
 
       MIN_RENDER_INTERVAL = 0.05
 
@@ -60,6 +62,13 @@ module RubyCoded
         init_token_cost
         init_login_flow
         init_plugin_state
+      end
+
+      def model=(value)
+        return if @model == value
+
+        @model = value
+        mark_dirty!
       end
 
       def streaming=(value)
