@@ -2,7 +2,7 @@
 
 # This module contains the version of the RubyCoded gem
 module RubyCoded
-  VERSION = "0.2.2"
+  VERSION = "0.3.0"
 
   def self.gem_version
     Gem::Version.new(VERSION).freeze
