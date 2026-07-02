@@ -3,6 +3,7 @@
 require "test_helper"
 require "ruby_coded/version"
 require "ruby_coded/chat/state"
+require "ruby_coded/chat/renderer/rich_text"
 require "ruby_coded/chat/renderer/chat_panel_formatting"
 require "ruby_coded/chat/renderer/chat_panel_sections"
 require "ruby_coded/chat/renderer/chat_panel"
@@ -61,6 +62,7 @@ class TestRendererChatPanel < Minitest::Test
 
     widget, = frame.rendered.last
     assert_equal true, widget[:wrap]
+    assert_kind_of Array, widget[:text]
   end
 
   def test_render_chat_panel_disables_wrap_for_banner
@@ -124,8 +126,8 @@ class TestRendererChatPanel < Minitest::Test
     sticky_widget, = frame.rendered[0]
     body_widget, = frame.rendered[1]
     assert_equal "current prompt", sticky_widget[:block][:title]
-    assert_includes sticky_widget[:text], "[YOU] First prompt"
-    assert_includes body_widget[:text], "[YOU] First prompt"
+    assert_includes @host.rich_text_plain(sticky_widget[:text]), "[YOU] First prompt"
+    assert_includes @host.rich_text_plain(body_widget[:text]), "[YOU] First prompt"
   end
 
   def test_render_chat_panel_updates_sticky_header_for_next_section
@@ -142,8 +144,9 @@ class TestRendererChatPanel < Minitest::Test
     @host.render_chat_panel(frame, area)
 
     sticky_widget, = frame.rendered[0]
-    assert_includes sticky_widget[:text], "[YOU] Second prompt"
-    refute_includes sticky_widget[:text], "[YOU] First prompt"
+    text = @host.rich_text_plain(sticky_widget[:text])
+    assert_includes text, "[YOU] Second prompt"
+    refute_includes text, "[YOU] First prompt"
   end
 
   def test_render_chat_panel_hides_sticky_header_when_user_prompt_is_at_top
@@ -192,7 +195,7 @@ class TestRendererChatPanel < Minitest::Test
 
     assert_equal "gpt-4o", chat_widget[:block][:title]
     assert_equal "thinking...", thinking_widget[:block][:title]
-    assert_includes thinking_widget[:text], "Let me reason about this..."
+    assert_includes @host.rich_text_plain(thinking_widget[:text]), "Let me reason about this..."
   end
 
   def test_thinking_panel_excludes_streaming_message_from_main_chat
@@ -206,8 +209,9 @@ class TestRendererChatPanel < Minitest::Test
     @host.render_chat_panel(frame, area)
 
     chat_widget, = frame.rendered[0]
-    assert_includes chat_widget[:text], "[YOU] Explain ruby"
-    refute_includes chat_widget[:text], "reasoning..."
+    chat_text = @host.rich_text_plain(chat_widget[:text])
+    assert_includes chat_text, "[YOU] Explain ruby"
+    refute_includes chat_text, "reasoning..."
   end
 
   def test_thinking_panel_disappears_when_think_tag_closes
@@ -222,9 +226,10 @@ class TestRendererChatPanel < Minitest::Test
 
     assert_equal 1, frame.rendered.size
     widget, = frame.rendered.first
-    assert_includes widget[:text], "The answer is 42."
-    refute_includes widget[:text], "reasoning..."
-    refute_includes widget[:text], "<think>"
+    text = @host.rich_text_plain(widget[:text])
+    assert_includes text, "The answer is 42."
+    refute_includes text, "reasoning..."
+    refute_includes text, "<think>"
   end
 
   def test_thinking_panel_disappears_after_streaming_ends
@@ -239,8 +244,9 @@ class TestRendererChatPanel < Minitest::Test
 
     assert_equal 1, frame.rendered.size
     widget, = frame.rendered.first
-    assert_includes widget[:text], "Final result."
-    refute_includes widget[:text], "reasoning..."
+    text = @host.rich_text_plain(widget[:text])
+    assert_includes text, "Final result."
+    refute_includes text, "reasoning..."
   end
 
   def test_strip_think_tags_from_completed_assistant_messages
@@ -296,9 +302,10 @@ class TestRendererChatPanel < Minitest::Test
 
     assert_equal 2, frame.rendered.size
     thinking_widget, = frame.rendered[1]
+    thinking_text = @host.rich_text_plain(thinking_widget[:text])
     assert_equal "thinking...", thinking_widget[:block][:title]
-    assert_includes thinking_widget[:text], "Let me look at the file"
-    assert_includes thinking_widget[:text], ">> [read_file] path: app.rb"
+    assert_includes thinking_text, "Let me look at the file"
+    assert_includes thinking_text, ">> [read_file] path: app.rb"
   end
 
   def test_tool_results_shown_in_thinking_panel
@@ -313,8 +320,9 @@ class TestRendererChatPanel < Minitest::Test
     @host.render_chat_panel(frame, area)
 
     thinking_widget, = frame.rendered[1]
-    assert_includes thinking_widget[:text], ">> [read_file] path: app.rb"
-    assert_includes thinking_widget[:text], "   class App; end"
+    thinking_text = @host.rich_text_plain(thinking_widget[:text])
+    assert_includes thinking_text, ">> [read_file] path: app.rb"
+    assert_includes thinking_text, "   class App; end"
   end
 
   def test_tool_pending_shown_in_thinking_panel
@@ -328,7 +336,7 @@ class TestRendererChatPanel < Minitest::Test
     @host.render_chat_panel(frame, area)
 
     thinking_widget, = frame.rendered[1]
-    assert_includes thinking_widget[:text], "?? [WRITE] edit_file"
+    assert_includes @host.rich_text_plain(thinking_widget[:text]), "?? [WRITE] edit_file"
   end
 
   def test_prior_messages_shown_in_main_chat_during_agent_cycle
@@ -344,10 +352,11 @@ class TestRendererChatPanel < Minitest::Test
     @host.render_chat_panel(frame, area)
 
     chat_widget, = frame.rendered[0]
-    assert_includes chat_widget[:text], "[YOU] Hello"
-    assert_includes chat_widget[:text], "Hi!"
-    assert_includes chat_widget[:text], "[YOU] Fix the bug"
-    refute_includes chat_widget[:text], "read_file"
+    chat_text = @host.rich_text_plain(chat_widget[:text])
+    assert_includes chat_text, "[YOU] Hello"
+    assert_includes chat_text, "Hi!"
+    assert_includes chat_text, "[YOU] Fix the bug"
+    refute_includes chat_text, "read_file"
   end
 
   def test_tool_messages_hidden_from_main_chat_after_streaming
@@ -364,10 +373,11 @@ class TestRendererChatPanel < Minitest::Test
 
     assert_equal 1, frame.rendered.size
     widget, = frame.rendered.first
-    assert_includes widget[:text], "[YOU] Fix the bug"
-    assert_includes widget[:text], "I fixed the bug."
-    refute_includes widget[:text], "read_file"
-    refute_includes widget[:text], "class App; end"
+    text = @host.rich_text_plain(widget[:text])
+    assert_includes text, "[YOU] Fix the bug"
+    assert_includes text, "I fixed the bug."
+    refute_includes text, "read_file"
+    refute_includes text, "class App; end"
   end
 
   def test_tool_messages_hidden_from_chat_panel_text
@@ -397,10 +407,11 @@ class TestRendererChatPanel < Minitest::Test
 
     assert_equal 2, frame.rendered.size
     thinking_widget, = frame.rendered[1]
-    assert_includes thinking_widget[:text], "I need to read the file first"
-    assert_includes thinking_widget[:text], ">> [read_file] path: app.rb"
-    assert_includes thinking_widget[:text], "   class App; end"
-    refute_includes thinking_widget[:text], "<think>"
+    text = @host.rich_text_plain(thinking_widget[:text])
+    assert_includes text, "I need to read the file first"
+    assert_includes text, ">> [read_file] path: app.rb"
+    assert_includes text, "   class App; end"
+    refute_includes text, "<think>"
   end
 
   def test_only_result_assistant_message_empty_after_think_only
@@ -409,6 +420,27 @@ class TestRendererChatPanel < Minitest::Test
     text = @host.chat_panel_text
     refute_includes text, "pure thinking only"
     refute_includes text, "<think>"
+  end
+
+  def test_rich_text_formats_bold_inline_code_and_code_blocks
+    @state.add_message(:assistant, "Use **bold** and `code`\n```ruby\nputs 1\n```")
+
+    frame = MockFrame.new
+    area = MockArea.new(width: 80, height: 24)
+    @host.render_chat_panel(frame, area)
+
+    widget, = frame.rendered.first
+    lines = widget[:text]
+    plain = @host.rich_text_plain(lines)
+
+    assert_includes plain, "Use bold and code"
+    assert_includes plain, "[ruby]"
+    assert_includes plain, "puts 1"
+
+    second_span = lines[0].spans[1]
+    third_span = lines[0].spans[3]
+    assert_includes second_span.style.modifiers, :bold
+    assert_equal :yellow, third_span.style.fg
   end
 
   # --- Input panel tests ---
@@ -489,6 +521,7 @@ class TestRendererChatPanel < Minitest::Test
 
 
   class ChatPanelHost
+    include RubyCoded::Chat::Renderer::RichText
     include RubyCoded::Chat::Renderer::ChatPanelFormatting
     include RubyCoded::Chat::Renderer::ChatPanelSections
     include RubyCoded::Chat::Renderer::ChatPanel
@@ -509,6 +542,19 @@ class TestRendererChatPanel < Minitest::Test
     end
   end
 
+  class MockStyle
+    attr_reader :fg, :bg, :modifiers
+
+    def initialize(fg: nil, bg: nil, modifiers: [])
+      @fg = fg
+      @bg = bg
+      @modifiers = modifiers
+    end
+  end
+
+  MockSpan = Struct.new(:content, :style, keyword_init: true)
+  MockLine = Struct.new(:spans, :alignment, :style, keyword_init: true)
+
   class MockTui
     def paragraph(text:, block:, wrap: false, scroll: [0, 0])
       { type: :paragraph, text: text, block: block, wrap: wrap, scroll: scroll }
@@ -516,6 +562,18 @@ class TestRendererChatPanel < Minitest::Test
 
     def block(title: nil, borders: [])
       { title: title, borders: borders }
+    end
+
+    def style(fg: nil, bg: nil, modifiers: [])
+      MockStyle.new(fg: fg, bg: bg, modifiers: modifiers)
+    end
+
+    def span(content:, style: nil)
+      MockSpan.new(content: content, style: style)
+    end
+
+    def line(spans:, alignment: nil, style: nil)
+      MockLine.new(spans: spans, alignment: alignment, style: style)
     end
 
     def layout_split(area, direction:, constraints:) # rubocop:disable Lint/UnusedMethodArgument

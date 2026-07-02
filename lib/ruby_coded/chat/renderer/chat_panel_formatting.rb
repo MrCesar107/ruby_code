@@ -10,26 +10,63 @@ module RubyCoded
         private
 
         def format_messages_text(messages)
-          messages.filter_map { |m| format_message(m) }.join("\n")
+          messages.filter_map { |m| format_message_plain(m) }.join("\n")
+        end
+
+        def format_message_plain(msg)
+          plain = format_message_rich(msg)
+          return nil unless plain
+
+          rich_text_plain(plain)
         end
 
         def format_message(msg)
+          format_message_plain(msg)
+        end
+
+        def format_message_rich(msg)
           case msg[:role]
           when :tool_call, :tool_pending, :tool_result then nil
-          when :system    then "--- #{msg[:content]}"
-          when :user      then format_user_message(msg[:content])
-          when :assistant then format_assistant_message(msg[:content])
-          else                 "#{msg[:role]}: #{msg[:content]}"
+          when :system    then format_system_message_rich(msg[:content])
+          when :user      then format_user_message_rich(msg[:content])
+          when :assistant then format_assistant_message_rich(msg[:content])
+          else                 rich_text_lines("#{msg[:role]}: #{msg[:content]}", role: :assistant)
           end
         end
 
+        def format_system_message_rich(content)
+          rich_text_lines("--- #{content}", role: :system)
+        end
+
         def format_user_message(content)
-          "[#{USER_LABEL}] #{content}"
+          rich_text_plain(format_user_message_rich(content))
+        end
+
+        def format_user_message_rich(content)
+          body_lines = rich_text_lines(content, role: :user)
+          return [@tui.line(spans: [@tui.span(content: "[#{USER_LABEL}]", style: base_text_style(:user_label))])] if body_lines.empty?
+
+          first_line = body_lines.first
+          rest_lines = body_lines[1..] || []
+          labeled_first = @tui.line(
+            spans: [
+              @tui.span(content: "[#{USER_LABEL}] ", style: base_text_style(:user_label)),
+              *Array(first_line.spans)
+            ]
+          )
+          [labeled_first, *rest_lines]
         end
 
         def format_assistant_message(content)
           result = strip_think_tags(content)
           result.empty? ? nil : result
+        end
+
+        def format_assistant_message_rich(content)
+          result = strip_think_tags(content)
+          return nil if result.empty?
+
+          rich_text_lines(result, role: :assistant)
         end
       end
     end

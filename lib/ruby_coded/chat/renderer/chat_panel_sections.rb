@@ -15,26 +15,43 @@ module RubyCoded
           visible_index = 0
 
           messages.each do |msg|
-            text = format_message(msg)
-            next if text.nil?
+            rich_lines = format_message_rich(msg)
+            next if rich_lines.nil?
 
-            section = next_section_for(sections, msg, text)
-            section[:entries] << { role: msg[:role], text: text, visible_index: visible_index }
+            plain_text = rich_text_plain(rich_lines)
+            section = next_section_for(sections, msg, plain_text, rich_lines)
+            section[:entries] << {
+              role: msg[:role],
+              text: plain_text,
+              rich_lines: rich_lines,
+              visible_index: visible_index
+            }
             visible_index += 1
           end
 
           sections
         end
 
-        def next_section_for(sections, msg, text)
+        def next_section_for(sections, msg, text, rich_lines)
           return sections.last if sections.any? && msg[:role] != :user
 
-          sections << { user_text: msg[:role] == :user ? text : nil, entries: [] }
+          sections << {
+            user_text: msg[:role] == :user ? text : nil,
+            user_rich_lines: msg[:role] == :user ? rich_lines : nil,
+            entries: []
+          }
           sections.last
         end
 
         def sections_to_text(sections)
           sections.flat_map { |section| section[:entries].map { |entry| entry[:text] } }.join("\n")
+        end
+
+        def sections_to_rich_lines(sections)
+          sections.flat_map.with_index do |section, section_index|
+            lines = section[:entries].flat_map { |entry| Array(entry[:rich_lines]) }
+            section_index == sections.length - 1 ? lines : lines + [@tui.line(spans: [@tui.span(content: "")])]
+          end
         end
 
         def sticky_header_for(area, sections)
@@ -49,7 +66,7 @@ module RubyCoded
           active = active_sticky_section(layout, inner_height)
           return nil unless active
 
-          { header_text: active[:user_text] }
+          { header_text: active[:user_text], header_rich_lines: active[:user_rich_lines] }
         end
 
         def build_section_layout(sections, inner_width)
@@ -78,6 +95,7 @@ module RubyCoded
           user_entry = entry_layouts.find { |entry| entry[:role] == :user }
           {
             user_text: section[:user_text],
+            user_rich_lines: section[:user_rich_lines],
             entries: entry_layouts,
             start_line: entry_layouts.first[:start_line],
             end_line: entry_layouts.last[:end_line],
@@ -104,11 +122,23 @@ module RubyCoded
           line_index.between?(section[:start_line], section[:end_line])
         end
 
-        def count_wrapped_lines(text, width)
-          return 1 if width <= 0 || text.empty?
+        def count_wrapped_lines(text_or_lines, width)
+          return 1 if width <= 0
 
-          text.split("\n", -1).sum do |line|
-            line.empty? ? 1 : (display_width(line).to_f / width).ceil
+          if text_or_lines.is_a?(Array)
+            return 1 if text_or_lines.empty?
+
+            text_or_lines.sum do |line|
+              plain = rich_line_plain(line)
+              plain.empty? ? 1 : (display_width(plain).to_f / width).ceil
+            end
+          else
+            text = text_or_lines.to_s
+            return 1 if text.empty?
+
+            text.split("\n", -1).sum do |line|
+              line.empty? ? 1 : (display_width(line).to_f / width).ceil
+            end
           end
         end
 

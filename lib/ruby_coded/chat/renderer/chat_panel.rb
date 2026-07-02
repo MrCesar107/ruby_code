@@ -29,6 +29,10 @@ module RubyCoded
           sections_to_text(cached_chat_sections(messages))
         end
 
+        def cached_formatted_lines(messages)
+          sections_to_rich_lines(cached_chat_sections(messages))
+        end
+
         def render_chat_panel(frame, area)
           init_render_cache if @cached_format_gen.nil?
           messages = @state.messages_snapshot
@@ -48,7 +52,7 @@ module RubyCoded
 
           if sticky
             header_area, body_area = split_chat_sticky(area)
-            render_sticky_header(frame, header_area, sticky[:header_text])
+            render_sticky_header(frame, header_area, sticky[:header_text], sticky[:header_rich_lines])
             render_sections_panel(frame, body_area, sections)
           else
             render_sections_panel(frame, area, sections)
@@ -62,15 +66,15 @@ module RubyCoded
         end
 
         def render_sections_panel(frame, area, sections)
-          text = sections_to_text(sections)
-          render_text_panel(frame, area, text, true)
+          rich_lines = sections_to_rich_lines(sections)
+          render_text_panel(frame, area, rich_lines, true)
         end
 
-        def render_text_panel(frame, area, text, scrollable)
-          scroll_y = scrollable ? chat_scroll_y(area, text) : 0
+        def render_text_panel(frame, area, text_or_lines, scrollable)
+          scroll_y = scrollable ? chat_scroll_y(area, text_or_lines) : 0
 
           widget = @tui.paragraph(
-            text: text,
+            text: text_or_lines,
             wrap: scrollable,
             scroll: [scroll_y, 0],
             block: @tui.block(title: chat_panel_title, borders: [:all])
@@ -78,9 +82,9 @@ module RubyCoded
           frame.render_widget(widget, area)
         end
 
-        def render_sticky_header(frame, area, text)
+        def render_sticky_header(frame, area, text, rich_lines = nil)
           widget = @tui.paragraph(
-            text: text,
+            text: rich_lines || text,
             wrap: true,
             scroll: [0, 0],
             block: @tui.block(title: STICKY_HEADER_TITLE, borders: [:all])
@@ -96,10 +100,10 @@ module RubyCoded
           )
         end
 
-        def chat_scroll_y(area, text)
+        def chat_scroll_y(area, text_or_lines)
           inner_height = [area.height - 2, 0].max
           inner_width = [area.width - 2, 0].max
-          total_lines = count_wrapped_lines(text, inner_width)
+          total_lines = count_wrapped_lines(text_or_lines, inner_width)
           @state.update_scroll_metrics(total_lines: total_lines, visible_height: inner_height)
           compute_scroll_y(total_lines, inner_height)
         end
