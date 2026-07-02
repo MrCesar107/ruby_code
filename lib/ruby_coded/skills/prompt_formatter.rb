@@ -20,17 +20,22 @@ module RubyCoded
       end
 
       def self.format_skills(skills)
-        skills.map do |skill|
-          lines = []
-          lines << "### #{skill.name}"
-          lines << skill.description.to_s unless skill.description.to_s.empty?
-          lines << "Modes: #{skill.modes.join(', ')}"
-          lines << "Tags: #{skill.tags.join(', ')}" if skill.tags.any?
-          lines << "Trigger: #{skill.trigger}" unless skill.trigger.to_s.empty?
-          lines << ""
-          lines << skill.content.to_s
-          lines.join("\n")
-        end.join("\n\n")
+        skills.map { |skill| format_skill(skill) }.join("\n\n")
+      end
+
+      def self.format_skill(skill)
+        (["### #{skill.name}"] + skill_metadata_lines(skill) + ["", skill.content.to_s]).join("\n")
+      end
+
+      def self.skill_metadata_lines(skill)
+        description = skill.description.to_s
+        trigger = skill.trigger.to_s
+        [
+          (description unless description.empty?),
+          "Modes: #{skill.modes.join(", ")}",
+          ("Tags: #{skill.tags.join(", ")}" if skill.tags.any?),
+          ("Trigger: #{trigger}" unless trigger.empty?)
+        ].compact
       end
     end
   end

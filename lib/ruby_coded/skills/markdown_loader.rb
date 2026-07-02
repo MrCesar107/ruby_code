@@ -90,11 +90,15 @@ module RubyCoded
       end
 
       def valid_entry?(attrs)
-        !attrs[:name].to_s.empty? &&
-          !attrs[:description].to_s.empty? &&
-          !attrs[:content].to_s.empty? &&
-          attrs[:modes].any? &&
-          attrs[:modes].all? { |mode| SUPPORTED_MODES.include?(mode) }
+        required_fields_present?(attrs) && valid_modes?(attrs[:modes])
+      end
+
+      def required_fields_present?(attrs)
+        %i[name description content].all? { |field| !attrs[field].to_s.empty? }
+      end
+
+      def valid_modes?(modes)
+        modes.any? && modes.all? { |mode| SUPPORTED_MODES.include?(mode) }
       end
 
       def extract_frontmatter(raw)

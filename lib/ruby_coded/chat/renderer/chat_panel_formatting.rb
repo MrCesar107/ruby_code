@@ -44,17 +44,15 @@ module RubyCoded
 
         def format_user_message_rich(content)
           body_lines = rich_text_lines(content, role: :user)
-          return [@tui.line(spans: [@tui.span(content: "[#{USER_LABEL}]", style: base_text_style(:user_label))])] if body_lines.empty?
+          return [user_label_line] if body_lines.empty?
 
-          first_line = body_lines.first
-          rest_lines = body_lines[1..] || []
-          labeled_first = @tui.line(
-            spans: [
-              @tui.span(content: "[#{USER_LABEL}] ", style: base_text_style(:user_label)),
-              *Array(first_line.spans)
-            ]
-          )
-          [labeled_first, *rest_lines]
+          [user_label_line(body_lines.first), *(body_lines[1..] || [])]
+        end
+
+        def user_label_line(first_line = nil)
+          label_span = @tui.span(content: "[#{USER_LABEL}]#{" " if first_line}", style: base_text_style(:user_label))
+          spans = first_line ? [label_span, *Array(first_line.spans)] : [label_span]
+          @tui.line(spans: spans)
         end
 
         def format_assistant_message(content)

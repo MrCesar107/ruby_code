@@ -8,20 +8,20 @@ module RubyCoded
         private
 
         def configure_agentic!(chat)
-          tools = @tool_registry.build_tools
-          chat.with_tools(*tools, replace: true)
+          chat.with_tools(*@tool_registry.build_tools, replace: true)
+          apply_instructions_if_supported(chat, agentic_instructions)
+
+          chat.on_tool_call { |tool_call| handle_tool_call(tool_call) }
+          chat.on_tool_result { |result| handle_tool_result(result) }
+        end
+
+        def agentic_instructions
           instructions = Tools::SystemPrompt.build(
             project_root: @project_root,
             max_write_rounds: MAX_WRITE_TOOL_ROUNDS,
             max_total_rounds: MAX_TOTAL_TOOL_ROUNDS
           )
-          apply_instructions_if_supported(
-            chat,
-            RubyCoded::Skills::PromptFormatter.append(instructions, skills_for_mode(:agent))
-          )
-
-          chat.on_tool_call { |tool_call| handle_tool_call(tool_call) }
-          chat.on_tool_result { |result| handle_tool_result(result) }
+          RubyCoded::Skills::PromptFormatter.append(instructions, skills_for_mode(:agent))
         end
 
         def handle_tool_call(tool_call)

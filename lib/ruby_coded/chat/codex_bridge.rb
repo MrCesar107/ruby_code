@@ -58,8 +58,12 @@ module RubyCoded
         @auth_manager = auth_manager
         @project_root = project_root
         @skill_catalog = skill_catalog || RubyCoded::Skills::Catalog.new(project_root: @project_root)
+        initialize_runtime_state
+      end
+
+      def initialize_runtime_state
         @cancel_requested = @agentic_mode = @plan_mode = false
-        @model = state.model
+        @model = @state.model
         @conversation_history = []
         @tool_registry = Tools::Registry.new(project_root: @project_root)
         reset_call_counts

@@ -153,19 +153,25 @@ module RubyCoded
 
       def create_bridge
         openai_creds = @credentials_store.retrieve(:openai)
-        if openai_creds && openai_creds["auth_method"] == "oauth"
-          @state.codex_mode = true
-          ensure_valid_codex_model!
-          CodexBridge.new(
-            @state,
-            credentials_store: @credentials_store,
-            auth_manager: @auth_manager,
-            skill_catalog: @skill_catalog
-          )
-        else
-          @state.codex_mode = false
-          LLMBridge.new(@state, skill_catalog: @skill_catalog)
-        end
+        return build_llm_bridge unless openai_creds && openai_creds["auth_method"] == "oauth"
+
+        build_codex_bridge
+      end
+
+      def build_codex_bridge
+        @state.codex_mode = true
+        ensure_valid_codex_model!
+        CodexBridge.new(
+          @state,
+          credentials_store: @credentials_store,
+          auth_manager: @auth_manager,
+          skill_catalog: @skill_catalog
+        )
+      end
+
+      def build_llm_bridge
+        @state.codex_mode = false
+        LLMBridge.new(@state, skill_catalog: @skill_catalog)
       end
 
       def ensure_valid_codex_model!

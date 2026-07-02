@@ -90,57 +90,19 @@ module RubyCoded
         end
 
         def format_thinking_message_rich(msg)
+          text, role = thinking_rich_text_and_role(msg)
+          rich_text_lines(text, role: role)
+        end
+
+        def thinking_rich_text_and_role(msg)
           case msg[:role]
-          when :assistant
-            rich_text_lines(msg[:content].gsub(%r{</?think>}, ""), role: :assistant)
-          when :tool_call
-            rich_text_lines(">> #{msg[:content]}", role: :tool_call)
-          when :tool_pending
-            rich_text_lines("?? #{msg[:content]}", role: :tool_pending)
-          when :tool_result
-            rich_text_lines("   #{msg[:content]}", role: :tool_result)
-          when :system
-            rich_text_lines("--- #{msg[:content]}", role: :system)
-          else
-            rich_text_lines(msg[:content].to_s, role: :assistant)
+          when :assistant    then [msg[:content].gsub(%r{</?think>}, ""), :assistant]
+          when :tool_call    then [">> #{msg[:content]}", :tool_call]
+          when :tool_pending then ["?? #{msg[:content]}", :tool_pending]
+          when :tool_result  then ["   #{msg[:content]}", :tool_result]
+          when :system       then ["--- #{msg[:content]}", :system]
+          else                    [msg[:content].to_s, :assistant]
           end
-        end
-
-        def render_chat_with_thinking(frame, area, messages)
-          full_cycle = current_cycle_messages(messages)
-          cycle = tail_of_cycle(full_cycle)
-          prior = messages[0...(messages.length - full_cycle.length)]
-          chat_area, thinking_area = split_chat_thinking(area)
-
-          render_messages_in_area(frame, chat_area, prior)
-          render_thinking_panel(frame, thinking_area, format_thinking_lines(cycle))
-        end
-
-        def split_chat_thinking(area)
-          @tui.layout_split(
-            area,
-            direction: :vertical,
-            constraints: [@tui.constraint_fill(3), @tui.constraint_fill(2)]
-          )
-        end
-
-        def render_thinking_panel(frame, area, thinking_lines)
-          scroll_y = thinking_scroll_y(area, thinking_lines)
-
-          widget = @tui.paragraph(
-            text: thinking_lines,
-            wrap: true,
-            scroll: [scroll_y, 0],
-            block: @tui.block(title: "thinking...", borders: [:all])
-          )
-          frame.render_widget(widget, area)
-        end
-
-        def thinking_scroll_y(area, text_or_lines)
-          inner_height = [area.height - 2, 0].max
-          inner_width = [area.width - 2, 0].max
-          total_lines = count_wrapped_lines(text_or_lines, inner_width)
-          [total_lines - inner_height, 0].max
         end
       end
     end

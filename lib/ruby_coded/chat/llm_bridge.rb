@@ -11,6 +11,7 @@ require_relative "plan_clarification_parser"
 require_relative "llm_bridge/tool_call_handling"
 require_relative "llm_bridge/streaming_retries"
 require_relative "llm_bridge/plan_mode"
+require_relative "llm_bridge/chat_configuration"
 
 module RubyCoded
   module Chat
@@ -19,6 +20,7 @@ module RubyCoded
       include ToolCallHandling
       include StreamingRetries
       include PlanMode
+      include ChatConfiguration
 
       MAX_RATE_LIMIT_RETRIES = 2
       RATE_LIMIT_BASE_DELAY = 2
@@ -108,44 +110,9 @@ module RubyCoded
 
       private
 
-      def skills_for_mode(mode, input: nil)
-        @skill_catalog.relevant_skills_for(mode: mode, input: input)
-      end
-
-      def apply_instructions_if_supported(chat, instructions)
-        return unless chat.respond_to?(:with_instructions)
-
-        chat.with_instructions(instructions)
-      end
-
       def reset_call_counts
         @tool_call_count = 0
         @write_tool_call_count = 0
-      end
-
-      def reconfigure_chat!
-        @chat_mutex.synchronize do
-          apply_mode_config!(@chat)
-        end
-      end
-
-      def apply_mode_config!(chat)
-        if @agentic_mode
-          configure_agentic!(chat)
-        elsif @plan_mode
-          configure_plan!(chat)
-        else
-          chat.with_tools(replace: true)
-          instructions = Tools::SystemPrompt.build(
-            project_root: @project_root,
-            max_write_rounds: MAX_WRITE_TOOL_ROUNDS,
-            max_total_rounds: MAX_TOTAL_TOOL_ROUNDS
-          )
-          apply_instructions_if_supported(
-            chat,
-            RubyCoded::Skills::PromptFormatter.append(instructions, skills_for_mode(:chat))
-          )
-        end
       end
     end
   end

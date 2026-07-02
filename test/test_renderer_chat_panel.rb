@@ -6,9 +6,12 @@ require "ruby_coded/chat/state"
 require "ruby_coded/chat/renderer/rich_text"
 require "ruby_coded/chat/renderer/chat_panel_formatting"
 require "ruby_coded/chat/renderer/chat_panel_sections"
+require "ruby_coded/chat/renderer/chat_panel_layout"
+require "ruby_coded/chat/renderer/chat_panel_cache"
 require "ruby_coded/chat/renderer/chat_panel"
 require "ruby_coded/chat/renderer/chat_panel_input"
 require "ruby_coded/chat/renderer/chat_panel_thinking"
+require "ruby_coded/chat/renderer/chat_panel_thinking_render"
 
 class TestRendererChatPanel < Minitest::Test
   def setup
@@ -524,9 +527,12 @@ class TestRendererChatPanel < Minitest::Test
     include RubyCoded::Chat::Renderer::RichText
     include RubyCoded::Chat::Renderer::ChatPanelFormatting
     include RubyCoded::Chat::Renderer::ChatPanelSections
+    include RubyCoded::Chat::Renderer::ChatPanelLayout
+    include RubyCoded::Chat::Renderer::ChatPanelCache
     include RubyCoded::Chat::Renderer::ChatPanel
     include RubyCoded::Chat::Renderer::ChatPanelInput
     include RubyCoded::Chat::Renderer::ChatPanelThinking
+    include RubyCoded::Chat::Renderer::ChatPanelThinkingRender
 
     def initialize(tui, state)
       @tui = tui

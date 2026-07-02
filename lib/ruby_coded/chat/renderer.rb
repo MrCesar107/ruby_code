@@ -3,8 +3,11 @@
 require_relative "renderer/rich_text"
 require_relative "renderer/chat_panel_formatting"
 require_relative "renderer/chat_panel_sections"
+require_relative "renderer/chat_panel_layout"
+require_relative "renderer/chat_panel_cache"
 require_relative "renderer/chat_panel"
 require_relative "renderer/chat_panel_thinking"
+require_relative "renderer/chat_panel_thinking_render"
 require_relative "renderer/chat_panel_input"
 require_relative "renderer/model_selector"
 require_relative "renderer/plan_clarifier_layout"
@@ -20,8 +23,11 @@ module RubyCoded
       include RichText
       include ChatPanelFormatting
       include ChatPanelSections
+      include ChatPanelLayout
+      include ChatPanelCache
       include ChatPanel
       include ChatPanelThinking
+      include ChatPanelThinkingRender
       include ChatPanelInput
       include ModelSelector
       include PlanClarifierLayout

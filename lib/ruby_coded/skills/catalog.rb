@@ -69,20 +69,9 @@ module RubyCoded
       end
 
       def valid_skills
-        @valid_skills ||= begin
-          seen = {}
-          skills = []
-
-          load_report[:entries].each do |entry|
-            key = entry[:name].downcase
-            next if seen[key]
-
-            seen[key] = true
-            skills << build_definition(entry)
-          end
-
-          skills
-        end
+        @valid_skills ||= load_report[:entries]
+                          .uniq { |entry| entry[:name].downcase }
+                          .map { |entry| build_definition(entry) }
       end
 
       def duplicate_names

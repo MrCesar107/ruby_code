@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
+require_relative "rich_text_inline"
+
 module RubyCoded
   module Chat
     class Renderer
       # Helpers for building and serializing rich text using ratatui text lines/spans.
       module RichText
-        public
+        include RichTextInline
 
         def rich_text_lines(text, role: :assistant)
           return [] if text.nil? || text.empty?
@@ -24,135 +26,57 @@ module RubyCoded
         end
 
         def parse_rich_text(text, role: :assistant)
-          lines = []
-          in_code_block = false
-          code_block_language = nil
+          state = { lines: [], in_code_block: false }
+          text.split("\n", -1).each { |raw_line| parse_rich_line(raw_line, state, role) }
+          state[:lines]
+        end
 
-          text.split("\n", -1).each do |raw_line|
-            if raw_line.start_with?("```")
-              if in_code_block
-                in_code_block = false
-                code_block_language = nil
-              else
-                in_code_block = true
-                code_block_language = raw_line.delete_prefix("```").strip
-                next if code_block_language.empty?
+        def parse_rich_line(raw_line, state, role)
+          return toggle_code_fence(raw_line, state) if raw_line.start_with?("```")
 
-                lines << @tui.line(
-                  spans: [
-                    @tui.span(content: "[#{code_block_language}]", style: @tui.style(fg: :yellow, modifiers: [:bold]))
-                  ]
-                )
-              end
-              next
-            end
+          state[:lines] << rich_line_for(raw_line, state[:in_code_block], role)
+        end
 
-            if in_code_block
-              lines << @tui.line(spans: [@tui.span(content: raw_line, style: code_block_style)])
-            else
-              lines << @tui.line(spans: inline_spans(raw_line, role: role))
-            end
+        def toggle_code_fence(raw_line, state)
+          if state[:in_code_block]
+            state[:in_code_block] = false
+            return
           end
 
-          lines
+          state[:in_code_block] = true
+          language = raw_line.delete_prefix("```").strip
+          state[:lines] << code_language_line(language) unless language.empty?
         end
 
-        def inline_spans(text, role: :assistant)
-          spans = []
-          remaining = text.dup
+        def rich_line_for(raw_line, in_code_block, role)
+          return @tui.line(spans: inline_spans(raw_line, role: role)) unless in_code_block
 
-          while !remaining.empty?
-            marker, index = next_inline_marker(remaining)
-            unless marker
-              spans << @tui.span(content: remaining, style: base_text_style(role))
-              break
-            end
-
-            prefix = remaining[0...index]
-            spans << @tui.span(content: prefix, style: base_text_style(role)) unless prefix.empty?
-
-            consumed = append_styled_span!(spans, remaining[index..], role: role)
-            if consumed
-              remaining = remaining[(index + consumed)..]
-            else
-              spans << @tui.span(content: remaining[index], style: base_text_style(role))
-              remaining = remaining[(index + 1)..]
-            end
-          end
-
-          spans = [@tui.span(content: "", style: base_text_style(role))] if spans.empty?
-          spans
+          @tui.line(spans: [@tui.span(content: raw_line, style: code_block_style)])
         end
 
-        def next_inline_marker(text)
-          markers = ["`", "**", "*"]
-          positions = markers.filter_map do |marker|
-            index = text.index(marker)
-            [marker, index] if index
-          end
-          positions.min_by { |(_, index)| index }
+        def code_language_line(language)
+          @tui.line(spans: [@tui.span(content: "[#{language}]", style: @tui.style(fg: :yellow, modifiers: [:bold]))])
         end
 
-        def append_styled_span!(spans, text, role: :assistant)
-          return append_code_span!(spans, text) if text.start_with?("`")
-          return append_bold_span!(spans, text, role: role) if text.start_with?("**")
-          return append_italic_span!(spans, text, role: role) if text.start_with?("*")
-
-          nil
-        end
-
-        def append_code_span!(spans, text)
-          close = text.index("`", 1)
-          return nil unless close
-
-          content = text[1...close]
-          spans << @tui.span(content: content, style: inline_code_style)
-          close + 1
-        end
-
-        def append_bold_span!(spans, text, role: :assistant)
-          close = text.index("**", 2)
-          return nil unless close
-
-          content = text[2...close]
-          spans << @tui.span(content: content, style: merge_style(base_text_style(role), modifiers: [:bold]))
-          close + 2
-        end
-
-        def append_italic_span!(spans, text, role: :assistant)
-          close = text.index("*", 1)
-          return nil unless close
-
-          content = text[1...close]
-          spans << @tui.span(content: content, style: merge_style(base_text_style(role), modifiers: [:italic]))
-          close + 1
-        end
-
-        def merge_style(style, fg: nil, bg: nil, modifiers: [])
+        def merge_style(style, foreground: nil, background: nil, modifiers: [])
           @tui.style(
-            fg: fg || style&.fg,
-            bg: bg || style&.bg,
+            fg: foreground || style&.fg,
+            bg: background || style&.bg,
             modifiers: ((style&.modifiers || []) + modifiers).uniq
           )
         end
 
+        BASE_TEXT_STYLES = {
+          system: { fg: :dark_gray, modifiers: [:italic] },
+          user_label: { fg: :cyan, modifiers: [:bold] },
+          tool_call: { fg: :yellow, modifiers: [:bold] },
+          tool_pending: { fg: :magenta, modifiers: [:bold] },
+          tool_result: { fg: :green },
+          thinking_title: { fg: :blue, modifiers: [:bold] }
+        }.freeze
+
         def base_text_style(role)
-          case role
-          when :system
-            @tui.style(fg: :dark_gray, modifiers: [:italic])
-          when :user_label
-            @tui.style(fg: :cyan, modifiers: [:bold])
-          when :tool_call
-            @tui.style(fg: :yellow, modifiers: [:bold])
-          when :tool_pending
-            @tui.style(fg: :magenta, modifiers: [:bold])
-          when :tool_result
-            @tui.style(fg: :green)
-          when :thinking_title
-            @tui.style(fg: :blue, modifiers: [:bold])
-          else
-            @tui.style(modifiers: [])
-          end
+          @tui.style(**BASE_TEXT_STYLES.fetch(role, { modifiers: [] }))
         end
 
         def inline_code_style

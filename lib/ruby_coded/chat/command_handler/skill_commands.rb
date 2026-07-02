@@ -59,18 +59,27 @@ module RubyCoded
         end
 
         def format_skill_reload_message(report)
-          message = "Skills reloaded. " \
-                    "Added: #{report[:added]}, removed: #{report[:removed]}, " \
-                    "total skills: #{report[:total]}, invalid files ignored: #{report[:invalid]}, " \
-                    "duplicates ignored: #{report[:duplicates]}."
-
-          details = []
-          invalid_files = Array(report[:invalid_files])
-          duplicate_skills = Array(report[:duplicate_skills])
-          details << "Invalid files: #{invalid_files.join(', ')}" if invalid_files.any?
-          details << "Duplicate skills: #{duplicate_skills.join(', ')}" if duplicate_skills.any?
+          message = skill_reload_summary(report)
+          details = skill_reload_details(report)
 
           details.empty? ? message : "#{message}\n#{details.join("\n")}"
+        end
+
+        def skill_reload_summary(report)
+          "Skills reloaded. " \
+            "Added: #{report[:added]}, removed: #{report[:removed]}, " \
+            "total skills: #{report[:total]}, invalid files ignored: #{report[:invalid]}, " \
+            "duplicates ignored: #{report[:duplicates]}."
+        end
+
+        def skill_reload_details(report)
+          invalid_files = Array(report[:invalid_files])
+          duplicate_skills = Array(report[:duplicate_skills])
+
+          details = []
+          details << "Invalid files: #{invalid_files.join(", ")}" if invalid_files.any?
+          details << "Duplicate skills: #{duplicate_skills.join(", ")}" if duplicate_skills.any?
+          details
         end
       end
     end
