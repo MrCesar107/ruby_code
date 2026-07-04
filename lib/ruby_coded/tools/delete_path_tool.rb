@@ -15,14 +15,11 @@ module RubyCoded
       end
 
       def execute(path:)
-        full_path = validate_path!(path)
-        return full_path if full_path.is_a?(Hash)
-        return { error: "Path not found: #{path}" } unless File.exist?(full_path)
-        return { error: "Cannot delete the project root" } if full_path == @project_root
+        run_pipeline(path: path, forbid_root: true) do |full_path|
+          next { error: "Path not found: #{path}" } unless File.exist?(full_path)
 
-        perform_delete(path, full_path)
-      rescue SystemCallError => e
-        { error: "Failed to delete #{path}: #{e.message}" }
+          perform_delete(path, full_path)
+        end
       end
 
       private

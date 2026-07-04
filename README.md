@@ -95,6 +95,22 @@ Safe tools run without asking. Confirm and dangerous tools show the operation de
 
 Plan mode restricts the model to read-only tools and a planning-oriented system prompt. The model will analyze your project and propose a structured plan. If the model needs clarification, it presents interactive options you can select or answer with custom text.
 
+### Extension model
+
+RubyCoded exposes three distinct extension mechanisms. When adding new behavior, pick the one that matches the intent:
+
+| Mechanism | What it is | Trigger | Where it lives |
+|---|---|---|---|
+| **Commands** | Explicit user-invoked actions (built-in or Markdown-defined slash commands) | User types `/foo` | `lib/ruby_coded/chat/command_handler/` (built-in) or `.ruby_coded/commands/*.md` (project-local) |
+| **Skills** | Automatic instruction overlays merged into the system prompt when they match the active mode/context | Mode + optional tags/trigger match the current request | `.rubycoded/skills/*.md` (project-local) |
+| **Plugins** | Code-level extensions that hook into state, input, renderer, or add new commands at runtime | Loaded on startup | Ruby classes registered via `RubyCoded::Plugins` |
+
+Rule of thumb:
+
+- Use a **command** if the user should invoke it explicitly.
+- Use a **skill** if you want extra instructions injected automatically for a mode.
+- Use a **plugin** if you need Ruby code to observe or mutate runtime behavior.
+
 ### Custom commands
 
 You can define your own project-specific slash commands using Markdown files inside:

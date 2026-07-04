@@ -2,6 +2,7 @@
 
 require "ruby_llm"
 require_relative "tool_rejected_error"
+require_relative "execution_pipeline"
 
 module RubyCoded
   module Tools
@@ -27,6 +28,19 @@ module RubyCoded
       end
 
       private
+
+      # Runs the shared execution pipeline (path validation, project-root
+      # guard, filesystem error normalization) around the given block.
+      # Prefer this over calling validate_path! directly for tools that
+      # need the full pipeline; use validate_path! when only path
+      # resolution is required (e.g. read-only tools with custom flows).
+      def run_pipeline(path: nil, forbid_root: false, &)
+        pipeline.call(path: path, forbid_root: forbid_root, &)
+      end
+
+      def pipeline
+        @pipeline ||= ExecutionPipeline.new(project_root: @project_root)
+      end
 
       def resolve_path(relative_path)
         expanded = File.expand_path(relative_path, @project_root)

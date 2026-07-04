@@ -264,7 +264,7 @@ class TestDeletePathTool < Minitest::Test
   def test_refuses_to_delete_project_root
     result = @tool.execute(path: ".")
     assert result.is_a?(Hash)
-    assert result[:error].include?("Cannot delete the project root")
+    assert result[:error].include?("Cannot operate on the project root")
   end
 
   def test_risk_level_is_dangerous

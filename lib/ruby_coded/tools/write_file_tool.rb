@@ -15,16 +15,13 @@ module RubyCoded
       end
 
       def execute(path:, content:)
-        full_path = validate_path!(path)
-        return full_path if full_path.is_a?(Hash)
+        run_pipeline(path: path) do |full_path|
+          dir = File.dirname(full_path)
+          FileUtils.mkdir_p(dir) unless File.directory?(dir)
 
-        dir = File.dirname(full_path)
-        FileUtils.mkdir_p(dir) unless File.directory?(dir)
-
-        File.write(full_path, content)
-        "File written: #{path} (#{content.bytesize} bytes)"
-      rescue SystemCallError => e
-        { error: "Failed to write #{path}: #{e.message}" }
+          File.write(full_path, content)
+          "File written: #{path} (#{content.bytesize} bytes)"
+        end
       end
     end
   end

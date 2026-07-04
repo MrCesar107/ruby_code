@@ -16,14 +16,12 @@ module RubyCoded
       end
 
       def execute(path:, old_text:, new_text:)
-        full_path = validate_path!(path)
-        return full_path if full_path.is_a?(Hash)
-        return { error: "File not found: #{path}" } unless File.exist?(full_path)
-        return { error: "Not a file: #{path}" } unless File.file?(full_path)
+        run_pipeline(path: path) do |full_path|
+          next { error: "File not found: #{path}" } unless File.exist?(full_path)
+          next { error: "Not a file: #{path}" } unless File.file?(full_path)
 
-        apply_edit(path, full_path, old_text, new_text)
-      rescue SystemCallError => e
-        { error: "Failed to edit #{path}: #{e.message}" }
+          apply_edit(path, full_path, old_text, new_text)
+        end
       end
 
       private
