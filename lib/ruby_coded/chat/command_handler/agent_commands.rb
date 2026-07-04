@@ -21,7 +21,7 @@ module RubyCoded
         end
 
         def enable_agent_mode
-          if @llm_bridge.agentic_mode
+          if @llm_bridge.agentic_mode?
             @llm_bridge.reset_agent_session!
             @state.add_message(:system,
                                "Agent session reset. Tool call counters cleared — ready for a new task.")
@@ -34,7 +34,7 @@ module RubyCoded
         end
 
         def disable_agent_mode
-          unless @llm_bridge.agentic_mode
+          unless @llm_bridge.agentic_mode?
             @state.add_message(:system, "Agent mode is already disabled.")
             return
           end
@@ -44,7 +44,7 @@ module RubyCoded
         end
 
         def show_agent_status
-          status = @llm_bridge.agentic_mode ? "enabled" : "disabled"
+          status = @llm_bridge.agentic_mode? ? "enabled" : "disabled"
           @state.add_message(:system, "Agent mode: #{status}. Use /agent on or /agent off to toggle.")
         end
       end

@@ -85,10 +85,12 @@ class TestLoginCommands < Minitest::Test
   end
 
   class MockLoginBridge
-    attr_reader :agentic_mode
-
     def initialize
       @agentic_mode = false
+    end
+
+    def agentic_mode?
+      @agentic_mode
     end
 
     def toggle_agentic_mode!(enabled)

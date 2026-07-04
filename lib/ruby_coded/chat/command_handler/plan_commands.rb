@@ -41,7 +41,7 @@ module RubyCoded
         end
 
         def deactivate_agent_if_needed
-          return unless @llm_bridge.agentic_mode
+          return unless @llm_bridge.agentic_mode?
 
           @llm_bridge.toggle_agentic_mode!(false)
           @state.add_message(:system, "Agent mode disabled.")

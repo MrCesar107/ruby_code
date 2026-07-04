@@ -10,9 +10,7 @@ require_relative "state"
 require_relative "input_handler"
 require_relative "renderer"
 require_relative "command_handler"
-require_relative "llm_bridge"
-require_relative "codex_bridge"
-require_relative "codex_models"
+require_relative "bridge_factory"
 require_relative "../commands/catalog"
 require_relative "../auth/credentials_store"
 require_relative "../auth/jwt_decoder"
@@ -42,17 +40,31 @@ module RubyCoded
       end
 
       def build_components!
+        build_catalogs!
+        @state = State.new(model: @model, command_catalog: @command_catalog)
+        @credentials_store = Auth::CredentialsStore.new(user_config: @user_config)
+        @bridge_factory = build_bridge_factory
+        @llm_bridge = @bridge_factory.build
+        @input_handler = InputHandler.new(@state)
+        @command_handler = build_command_handler
+      end
+
+      def build_catalogs!
         @command_catalog = RubyCoded::Commands::Catalog.new(
           project_root: Dir.pwd,
           plugin_registry: RubyCoded.plugin_registry
         )
         @skill_catalog = RubyCoded::Skills::Catalog.new(project_root: Dir.pwd)
+      end
 
-        @state = State.new(model: @model, command_catalog: @command_catalog)
-        @credentials_store = Auth::CredentialsStore.new(user_config: @user_config)
-        @llm_bridge = create_bridge
-        @input_handler = InputHandler.new(@state)
-        @command_handler = build_command_handler
+      def build_bridge_factory
+        BridgeFactory.new(
+          state: @state,
+          credentials_store: @credentials_store,
+          auth_manager: @auth_manager,
+          skill_catalog: @skill_catalog,
+          user_config: @user_config
+        )
       end
 
       IDLE_POLL_TIMEOUT = 0.016
@@ -127,7 +139,7 @@ module RubyCoded
       end
 
       def enable_default_agent_mode!
-        return if @llm_bridge.agentic_mode
+        return if @llm_bridge.agentic_mode?
 
         @llm_bridge.toggle_agentic_mode!(true)
       end
@@ -151,45 +163,20 @@ module RubyCoded
         @state.add_message(:system, "Model switched to #{model_name}.")
       end
 
-      def create_bridge
-        openai_creds = @credentials_store.retrieve(:openai)
-        return build_llm_bridge unless openai_creds && openai_creds["auth_method"] == "oauth"
-
-        build_codex_bridge
-      end
-
-      def build_codex_bridge
-        @state.codex_mode = true
-        ensure_valid_codex_model!
-        CodexBridge.new(
-          @state,
-          credentials_store: @credentials_store,
-          auth_manager: @auth_manager,
-          skill_catalog: @skill_catalog
-        )
-      end
-
-      def build_llm_bridge
-        @state.codex_mode = false
-        LLMBridge.new(@state, skill_catalog: @skill_catalog)
-      end
-
-      def ensure_valid_codex_model!
-        return if CodexModels.codex_model?(@state.model)
-
-        @state.model = CodexBridge::DEFAULT_MODEL
-        @user_config&.set_config("model", CodexBridge::DEFAULT_MODEL)
-      end
-
       def recreate_bridge!
         @command_catalog.reload!
         @skill_catalog.reload!
-        agentic = @llm_bridge.agentic_mode
-        plan = @llm_bridge.plan_mode
-        @llm_bridge = create_bridge
-        @llm_bridge.toggle_agentic_mode!(agentic) if agentic
-        @llm_bridge.toggle_plan_mode!(plan) if plan
+        previous_mode = @llm_bridge.mode
+        @llm_bridge = @bridge_factory.build
+        restore_bridge_mode!(previous_mode)
         @command_handler = build_command_handler
+      end
+
+      def restore_bridge_mode!(mode)
+        case mode.name
+        when :agent then @llm_bridge.toggle_agentic_mode!(true)
+        when :plan then @llm_bridge.toggle_plan_mode!(true)
+        end
       end
     end
   end

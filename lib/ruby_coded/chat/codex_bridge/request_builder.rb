@@ -12,9 +12,6 @@ module RubyCoded
           "OpenAI-Beta" => "responses=experimental"
         }.freeze
 
-        DEFAULT_INSTRUCTIONS = "You are a helpful coding assistant. " \
-                               "Answer concisely and provide code examples when relevant."
-
         private
 
         def codex_headers
@@ -29,7 +26,7 @@ module RubyCoded
 
         def build_request_body
           body = base_request_body
-          body[:tools] = build_tools_spec if @agentic_mode || @plan_mode
+          body[:tools] = build_tools_spec if @mode.allows_tools?
           body
         end
 
@@ -68,31 +65,11 @@ module RubyCoded
         end
 
         def build_instructions
-          skills = @skill_catalog.relevant_skills_for(mode: current_mode)
-          RubyCoded::Skills::PromptFormatter.append(base_instructions, skills)
-        end
-
-        def base_instructions
-          if @agentic_mode
-            Tools::SystemPrompt.build(
-              project_root: @project_root, max_write_rounds: MAX_WRITE_TOOL_ROUNDS,
-              max_total_rounds: MAX_TOTAL_TOOL_ROUNDS
-            )
-          elsif @plan_mode
-            Tools::PlanSystemPrompt.build(project_root: @project_root)
-          else
-            DEFAULT_INSTRUCTIONS
-          end
-        end
-
-        def current_mode
-          return :agent if @agentic_mode
-
-          @plan_mode ? :plan : :chat
+          @prompt_builder.build(@mode)
         end
 
         def build_tools_spec
-          tool_instances = if @agentic_mode
+          tool_instances = if @mode.allows_mutation?
                              @tool_registry.build_tools
                            else
                              @tool_registry.build_readonly_tools

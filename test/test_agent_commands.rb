@@ -29,7 +29,7 @@ class TestAgentCommands < Minitest::Test
 
   def test_agent_on_enables_agentic_mode
     @handler.handle("/agent on")
-    assert @llm_bridge.agentic_mode
+    assert @llm_bridge.agentic_mode?
     last_msg = @state.messages_snapshot.last
     assert_includes last_msg[:content], "Agent mode enabled"
   end
@@ -37,7 +37,7 @@ class TestAgentCommands < Minitest::Test
   def test_agent_off_disables_agentic_mode
     @llm_bridge.toggle_agentic_mode!(true)
     @handler.handle("/agent off")
-    refute @llm_bridge.agentic_mode
+    refute @llm_bridge.agentic_mode?
     last_msg = @state.messages_snapshot.last
     assert_includes last_msg[:content], "Agent mode disabled"
   end
@@ -80,10 +80,12 @@ class TestAgentCommands < Minitest::Test
 
 
   class MockAgentBridge
-    attr_reader :agentic_mode
-
     def initialize
       @agentic_mode = false
+    end
+
+    def agentic_mode?
+      @agentic_mode
     end
 
     def toggle_agentic_mode!(enabled)

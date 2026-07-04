@@ -1,5 +1,15 @@
 # frozen_string_literal: true
 
+# Plugins are **code-level behavioral extensions** to the chat runtime.
+#
+# A plugin can extend State, InputHandler, Renderer, or CommandHandler
+# through `apply_extensions!`. Plugins may register their own slash
+# commands, but they may also add invisible behavior (e.g. command
+# completion). Contrast with:
+#
+# - RubyCoded::Commands — explicit user-invoked slash actions.
+# - RubyCoded::Skills   — automatic prompt overlays for the model.
+
 require_relative "plugins/base"
 require_relative "plugins/registry"
 
@@ -17,5 +27,4 @@ end
 
 require_relative "plugins/command_completion/plugin"
 
-# Register built-in plugins
 RubyCoded.register_plugin(RubyCoded::Plugins::CommandCompletion::Plugin)

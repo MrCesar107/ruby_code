@@ -3,48 +3,15 @@
 module RubyCoded
   module Chat
     class LLMBridge
-      # Plan mode configuration, auto-switching to agent, and clarification handling.
+      # Plan mode configuration and plan/clarification post-processing.
+      # Auto-switch heuristic lives in BridgeCommon.
       module PlanMode
-        IMPLEMENTATION_PATTERNS = [
-          /\bimplement/i,
-          /\bgo ahead/i,
-          /\bproceed/i,
-          /\bexecut/i,
-          /\bejecutar?/i,
-          /\bcomenz/i,
-          /\bcomienz/i,
-          /\bhazlo/i,
-          /\bconstru[iy]/i,
-          /\badelante/i,
-          /\bdale\b/i,
-          /\bdo it/i,
-          /\bbuild it/i
-        ].freeze
-
         private
-
-        def should_auto_switch_to_agent?(input)
-          @plan_mode && @state.current_plan && implementation_request?(input)
-        end
-
-        def implementation_request?(input)
-          IMPLEMENTATION_PATTERNS.any? { |pattern| input.match?(pattern) }
-        end
-
-        def auto_switch_to_agent!
-          toggle_agentic_mode!(true)
-          @state.add_message(:system,
-                             "Plan mode disabled — switching to agent mode to implement the plan.")
-        end
 
         def configure_plan!(chat)
           readonly_tools = @tool_registry.build_readonly_tools
           chat.with_tools(*readonly_tools, replace: true)
-          instructions = Tools::PlanSystemPrompt.build(project_root: @project_root)
-          apply_instructions_if_supported(
-            chat,
-            RubyCoded::Skills::PromptFormatter.append(instructions, skills_for_mode(:plan))
-          )
+          apply_instructions_if_supported(chat, @prompt_builder.build(RuntimeMode.plan))
 
           chat.on_tool_call { |tool_call| handle_tool_call(tool_call) }
           chat.on_tool_result { |result| handle_tool_result(result) }

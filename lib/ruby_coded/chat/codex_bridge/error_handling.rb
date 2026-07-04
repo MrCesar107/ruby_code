@@ -4,13 +4,7 @@ module RubyCoded
   module Chat
     class CodexBridge
       # Retry logic and error message formatting for the Codex API client.
-      # rubocop:disable Metrics/ModuleLength
       module ErrorHandling
-        AGENT_SWITCH_PATTERN = /
-          \b(implement|go[ ]ahead|proceed|execut|ejecutar?|comenz|
-          comienz|hazlo|constru[iy]|adelante|dale|do[ ]it|build[ ]it)\b
-        /ix
-
         UNSUPPORTED_MODEL_PATTERN = /not supported when using Codex with a ChatGPT account/i
 
         private
@@ -23,8 +17,7 @@ module RubyCoded
         end
 
         def reset_call_counts
-          @tool_call_count = 0
-          @write_tool_call_count = 0
+          @policy.reset_counters!
         end
 
         def prepare_send(input)
@@ -33,17 +26,6 @@ module RubyCoded
           @cancel_requested = false
           @state.streaming = true
           @state.add_message(:assistant, "")
-        end
-
-        def should_auto_switch_to_agent?(input)
-          @plan_mode && @state.respond_to?(:current_plan) && @state.current_plan &&
-            input.match?(AGENT_SWITCH_PATTERN)
-        end
-
-        def auto_switch_to_agent!
-          toggle_agentic_mode!(true)
-          @state.add_message(:system,
-                             "Plan mode disabled — switching to agent mode to implement the plan.")
         end
 
         def attempt_with_retries(input, retries = 0, fallback_attempted: false)
@@ -145,7 +127,6 @@ module RubyCoded
           MSG
         end
       end
-      # rubocop:enable Metrics/ModuleLength
     end
   end
 end

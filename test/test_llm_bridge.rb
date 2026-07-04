@@ -162,8 +162,8 @@ class TestLLMBridge < Minitest::Test
     bridge.toggle_plan_mode!(true)
     @state.update_current_plan!("# My Plan\n- Step 1\n- Step 2")
 
-    assert bridge.plan_mode
-    refute bridge.agentic_mode
+    assert bridge.plan_mode?
+    refute bridge.agentic_mode?
 
     result = bridge.send(:should_auto_switch_to_agent?, "implement the plan")
 
