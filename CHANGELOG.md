@@ -13,6 +13,10 @@ for a easely reading of the chat
 
 - **Refactor chat panel rendering system into multiple modules**
 - **Prompt construction now supports project skills**: Chat, plan, and agent mode instructions now append relevant project-local skills so project-specific guidance is consistently available across runtime modes, including Codex-backed sessions.
+- **Ruby-conventional predicate names on bridges**: `LLMBridge` and `CodexBridge` now expose `agentic_mode?` and `plan_mode?` (previously `agentic_mode` / `plan_mode`). Plugins that read these predicates need to update the call site.
+- **Internal chat bridge refactor**: Extracted `RuntimeMode` as the single source of truth for chat/agent/plan modes, `BridgeFactory` for backend selection, `Tools::ExecutionPolicy` for centralized risk/approval/limits, `PromptBuilder` for mode-aware system instructions, and `BridgeCommon` (`ModeTransitions`, `ToolFlow`, `AutoSwitch`) to share behavior between `LLMBridge` and `CodexBridge`.
+- **Tool execution pipeline**: Added `Tools::ExecutionPipeline` and `BaseTool#run_pipeline` to standardize path validation, project-root guarding and filesystem error normalization for side-effecting tools; adopted in `WriteFileTool`, `EditFileTool` and `DeletePathTool`.
+- **Extension model documented**: The README now describes the boundary between commands, skills and plugins.
 
 ## [0.3.1] - 2026-06-28
 
