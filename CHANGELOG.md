@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-04
+
 ### Added
 
 - **Highlight the users' messages in the chat section**: Now the chat sections highlights and spots the users' mesagges in blocks
